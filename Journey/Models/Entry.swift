@@ -15,6 +15,15 @@ final class Entry {
     // Photos library identifiers; the media itself stays in the user's library.
     var mediaAssetIDs: [String] = []
     var isAIGenerated: Bool = false
+    // The story around the entry, drafted by AI or written by the user. Kept apart
+    // from `body`, which is the user's own notes and is never touched by AI.
+    var narrative: String = ""
+    var narrativeSourceRaw: String = NarrativeSource.user.rawValue
+    // On-device translation into `translationLanguage` ("en", "it"); originals stay untouched.
+    var translationLanguage: String = ""
+    var translatedTitle: String = ""
+    var translatedBody: String = ""
+    var translatedNarrative: String = ""
 
     var publishStatusRaw: String = PublishStatus.notPublished.rawValue
     var remoteID: String?
@@ -35,6 +44,15 @@ final class Entry {
         get { LocationPrecision(rawValue: sharedLocationPrecisionRaw) ?? .city }
         set { sharedLocationPrecisionRaw = newValue.rawValue }
     }
+
+    var narrativeSource: NarrativeSource {
+        get { NarrativeSource(rawValue: narrativeSourceRaw) ?? .user }
+        set { narrativeSourceRaw = newValue.rawValue }
+    }
+}
+
+nonisolated enum NarrativeSource: String, Codable, Sendable {
+    case onDevice, chatGPT, user
 }
 
 nonisolated enum PublishStatus: String, Codable, Sendable {

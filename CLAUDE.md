@@ -46,8 +46,37 @@ xcodebuild -project Journey.xcodeproj -scheme Journey \
 - Media is never copied: entries store Photos `localIdentifier`s.
 - `DayTimeline` owns the photo-to-visit matching rule (±10 min around the
   visit, and ≤250 m when the photo has a location).
+- `Visit.source` is `.tracked` (Core Location) or `.photos` (rebuilt by
+  `PhotoPlaces` from the day's unmatched located photos when the day opens).
+  `PhotoPlaces.radius` is `DayTimeline.maxDistance` on purpose: if clustering
+  were looser than matching, a photo could miss its own visit and spawn a new
+  one on every open.
+- All reverse geocoding goes through `PlaceNamer` (sequential, paced — Apple
+  throttles it); unnamed visits are retried whenever their day is opened.
 - `CLGeocoder` is deprecated on iOS 26; reverse geocoding uses
   `MKReverseGeocodingRequest`.
+- AI drafting: `PhotoLabeler` (Vision `ClassifyImageRequest`) turns media into
+  labels, because the Foundation Models system model is text-only;
+  `NarrativeDrafter` streams a draft into `Entry.narrative`. AI writes only to
+  `narrative`, never to `body` (the user's notes). `narrativeSource` records
+  who wrote it; an edited AI draft becomes `.user`. Keep prompts short — the
+  model's context window is small, so draft one entry at a time.
+- Drafting can't be exercised in this Mac's simulator (macOS 15 host); it needs
+  a device with Apple Intelligence or a macOS 26 host. When unavailable the
+  button is disabled and the footer shows `NarrativeDrafter.unavailableReason`.
+- Dictation: `Dictation` wraps iOS 26 `SpeechAnalyzer` + `DictationTranscriber`
+  (`AssetInventory` downloads each language's model on first use). The mic tap
+  and buffer conversion are `nonisolated static` on purpose — Core Audio calls
+  them off the main thread, and everything else is main-actor. Final results
+  are appended to the focused field; volatile ones only show in the keyboard
+  bar.
+- Translation: `EntryTranslator` runs through the SwiftUI `.translationTask`
+  modifier, which owns the language-download prompt. Results live in
+  `Entry.translated*` + `translationLanguage`, never over the originals.
+- `PHPickerFilter` has no date option, hence `DayPhotoPicker` for the entry's
+  day; the system `PhotosPicker` remains as *Browse All Photos*.
+- Drafting, dictation and translation all need on-device models: verify them
+  on a phone.
 
 ## Demo and tools
 
@@ -79,10 +108,9 @@ xcodebuild -project Journey.xcodeproj -scheme Journey \
 Decisions already made, so new work fits them:
 
 - **Views:** calendar (year/month/week/day zoom) and map (clustered pins).
-- **Narration:** drafted on-device with Foundation Models (text-only, small
-  context → one entry at a time; photo labels come from Vision). Narrative is
-  separate from the user's own notes, which AI never edits, and keeps a
-  revision history with its source (on-device, ChatGPT, user).
+- **Narration history:** on-device drafting exists (see Code). Still to come:
+  a revision history per entry, so ChatGPT proposals can be accepted,
+  rejected or reverted to an earlier version.
 - **Publishing:** entries get a visibility (local only / private sync /
   public). A separate website exposes an agent-friendly API; a custom GPT uses
   it to read entries and submit narrative *proposals* tied to the revision

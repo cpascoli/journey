@@ -13,7 +13,7 @@ struct DayTimeline {
     private(set) var looseAssetIDs: [String] = []
 
     private static let timeSlack: TimeInterval = 10 * 60
-    private static let maxDistance: CLLocationDistance = 250
+    static let maxDistance: CLLocationDistance = 250
 
     init(visits: [Visit], assets: [PHAsset], now: Date = .now) {
         stops = visits.map { Stop(visit: $0) }

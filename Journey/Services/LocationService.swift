@@ -1,5 +1,4 @@
 import CoreLocation
-import MapKit
 import SwiftData
 
 @Observable
@@ -67,15 +66,7 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
         try? context.save()
 
         if visit.placeName == nil {
-            Task { await resolvePlaceName(for: visit) }
+            Task { await PlaceNamer.nameUnnamed([visit], in: context) }
         }
-    }
-
-    private func resolvePlaceName(for visit: Visit) async {
-        guard let request = MKReverseGeocodingRequest(location: visit.location),
-              let item = (try? await request.mapItems)?.first
-        else { return }
-        visit.placeName = item.name
-        try? context.save()
     }
 }

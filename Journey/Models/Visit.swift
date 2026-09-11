@@ -11,6 +11,7 @@ final class Visit {
     var longitude: Double = 0
     var horizontalAccuracy: Double = 0
     var placeName: String?
+    var sourceRaw: String = VisitSource.tracked.rawValue
     var entries: [Entry]? = []
 
     init(arrival: Date, coordinate: CLLocationCoordinate2D) {
@@ -22,4 +23,14 @@ final class Visit {
     var location: CLLocation {
         CLLocation(latitude: latitude, longitude: longitude)
     }
+
+    var source: VisitSource {
+        get { VisitSource(rawValue: sourceRaw) ?? .tracked }
+        set { sourceRaw = newValue.rawValue }
+    }
+}
+
+/// `tracked`: recorded by Core Location. `photos`: rebuilt from where and when photos were taken.
+nonisolated enum VisitSource: String, Codable, Sendable {
+    case tracked, photos
 }

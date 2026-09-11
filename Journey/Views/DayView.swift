@@ -90,6 +90,14 @@ struct DayView: View {
         }
         .task(id: day) {
             assets = await PhotoLibrary.requestAccess() ? PhotoLibrary.assets(on: day) : []
+            // Days before tracking started (or places it missed) get their places from the photos.
+            let loose = Set(DayTimeline(visits: visits, assets: assets).looseAssetIDs)
+            let created = PhotoPlaces.addVisits(
+                for: assets.filter { loose.contains($0.localIdentifier) },
+                extending: visits,
+                in: context
+            )
+            await PlaceNamer.nameUnnamed(visits + created, in: context)
         }
         .task {
             location.requestAuthorizationIfNeeded()
@@ -118,6 +126,13 @@ private struct EntryRow: View {
             if !entry.body.isEmpty {
                 Text(entry.body).lineLimit(2)
             }
+            if !entry.narrative.isEmpty {
+                Text(entry.narrative)
+                    .font(.subheadline)
+                    .italic()
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+            }
             if !entry.mediaAssetIDs.isEmpty {
                 AssetStrip(ids: entry.mediaAssetIDs, size: 48)
             }
@@ -131,9 +146,19 @@ private struct StopRow: View {
     let onWrite: () -> Void
 
     private var timeRange: String {
-        let arrival = stop.visit.arrival.formatted(date: .omitted, time: .shortened)
-        let departure = stop.visit.departure?.formatted(date: .omitted, time: .shortened) ?? "now"
-        return "\(arrival) – \(departure)"
+        let visit = stop.visit
+        let arrival = visit.arrival.formatted(date: .omitted, time: .shortened)
+        var text: String
+        if let departure = visit.departure {
+            let end = departure.formatted(date: .omitted, time: .shortened)
+            text = end == arrival ? arrival : "\(arrival) – \(end)"
+        } else {
+            text = "\(arrival) – now"
+        }
+        if visit.source == .photos {
+            text += " · from photos"
+        }
+        return text
     }
 
     var body: some View {

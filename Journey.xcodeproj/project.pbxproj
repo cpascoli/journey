@@ -24,19 +24,11 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1C13D53F51D5AC5126011FD2 /* Journey */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
 			path = Journey;
 			sourceTree = "<group>";
 		};
 		9B5C796A6E8ED20C2B83D487 /* JourneyUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
 			path = JourneyUITests;
 			sourceTree = "<group>";
 		};

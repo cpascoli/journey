@@ -9,14 +9,22 @@ lets you write about each day — in one journal or several.
 ## What it does
 
 - **Records where you go.** Place visits are captured in the background with
-  almost no battery cost, and named automatically.
+  almost no battery cost, and named automatically. Days from before you
+  installed the app get their places back from where your photos were taken.
 - **Matches your media to places.** Each place in a day shows the photos and
   videos taken there, straight from your library — nothing is copied.
 - **A day at a glance.** Your entries, the places you visited and any
   leftover photos, with arrows to move between days.
 - **Entries on your terms.** Title, place, time, notes, photos and videos — all
-  optional. Tap the pencil on a place and the entry starts pre-filled with it.
-  The keyboard's dictation mic works in the notes.
+  optional. Tap the pencil on a place and the entry starts pre-filled with it,
+  and adding media shows only what you shot that day.
+- **Dictate instead of typing.** A mic button above the keyboard transcribes
+  English or Italian on the phone, into whichever field you're in.
+- **Translate between English and Italian** on the device. Translations sit
+  alongside what you wrote and never replace it.
+- **Drafts the story for you.** In the entry editor, Apple Intelligence writes
+  a short first-person draft from the place, the time, your notes and what's
+  in your photos — entirely on the phone, and kept apart from your own notes.
 - **More than one journal.** Everything goes to *Main* by default; add others
   from the journal menu when you want them.
 
@@ -24,9 +32,6 @@ lets you write about each day — in one journal or several.
 
 - **Calendar view** that zooms from year to month, week and day.
 - **Map view** with entries as pins that cluster as you zoom out.
-- **Dictation button** using on-device speech recognition.
-- **Draft narration** written on-device by Apple Intelligence, from each
-  entry's places, times, notes and photo labels.
 - **Publishing** selected entries to your own website. The site exposes an API
   that a custom ChatGPT GPT can use to read your journal and propose richer
   narration, which you accept or reject in the app.
@@ -45,6 +50,21 @@ The service is created when the app launches, not when a view appears: iOS
 relaunches a terminated app in the background to deliver a visit, and there is
 no UI at that point.
 
+### Places from photos
+
+Visit tracking only starts when the app is installed, and iOS never hands apps
+your past location history. Photos carry their own time and GPS position, so
+[`PhotoPlaces`](Journey/Services/PhotoPlaces.swift) rebuilds the missing
+places when you open a day: each located photo that isn't already on a place
+joins a photo-derived place within 250 m and two hours of it, or starts a new
+one. The radius is the same distance the day view matches photos by, so every
+photo lands on the place it created and reopening a day costs nothing.
+
+[`PlaceNamer`](Journey/Services/PlaceNamer.swift) names places one lookup at a
+time, because Apple throttles geocoding; a failed lookup is retried the next
+time the day is opened. Photos without a location, like screenshots or saved
+images, stay under *Other photos & videos*.
+
 ### Matching photos to places
 
 [`DayTimeline`](Journey/Services/DayTimeline.swift) puts a photo under a
@@ -54,6 +74,37 @@ place. Anything left over is shown under *Other photos & videos*.
 
 Entries store Photos library identifiers, not the media, so a journal stays
 small and your library remains the single source of truth.
+
+### Drafting the story on the device
+
+Apple's on-device model reads text only, so
+[`PhotoLabeler`](Journey/Services/PhotoLabeler.swift) first runs Vision's
+image classifier over up to eight of the entry's photos (a still frame for
+videos) and keeps the confident labels — *temple*, *boat*, *market*.
+[`NarrativeDrafter`](Journey/Services/NarrativeDrafter.swift) then hands the
+model the place, time, title, your notes and those labels, with instructions
+to use only those facts and invent nothing, and streams the draft into the
+editor as it's written.
+
+The draft lives in its own `narrative` field. Your notes are never edited, and
+the narrative remembers whether it came from the device or from you: edit the
+draft and it becomes yours.
+
+### Dictation, translation and the day picker
+
+- [`Dictation`](Journey/Services/Dictation.swift) runs iOS 26's
+  `SpeechAnalyzer` with a `DictationTranscriber`, so punctuation comes for
+  free. The first time you dictate in a language, iOS downloads its speech
+  model. Finished phrases are added to the field you're in; the one you're
+  still saying shows in the bar above the keyboard.
+- [`EntryTranslator`](Journey/Services/EntryTranslator.swift) sends the title,
+  notes and story through Apple's Translation framework in one batch, and the
+  framework works out the source language. The first translation may ask to
+  download the language.
+- The system photo picker can't filter by date, so
+  [`DayPhotoPicker`](Journey/Views/DayPhotoPicker.swift) lists the entry's day
+  straight from your library. *Browse All Photos* still opens the system picker
+  for anything else.
 
 ### Data model
 
@@ -69,8 +120,9 @@ publish state, and how precisely to share the location.
 
 - A Mac with **Xcode 26** and [XcodeGen](https://github.com/yonaskolb/XcodeGen)
   (`brew install xcodegen`).
-- An **iPhone on iOS 26**. Draft narration, when it lands, will need an
-  Apple Intelligence iPhone (15 Pro or newer).
+- An **iPhone on iOS 26**. Drafting stories needs an Apple Intelligence
+  iPhone (15 Pro or newer) with Apple Intelligence turned on; everything else
+  works without it.
 - An **Apple ID**. A free one works; the app then has to be reinstalled every
   7 days.
 
@@ -156,10 +208,16 @@ swift Tools/make-icon.swift
 
 ## Simulator limits
 
-- The simulator never produces visits; iOS only records them from real
-  movement. Test *Places* on a phone.
+- The simulator never produces tracked visits; iOS only records them from real
+  movement, so test tracking on a phone. Places rebuilt from photos work
+  anywhere the photos have locations.
 - On iOS 26, `simctl privacy grant photos` doesn't stop the photo prompt, so
   answer it once by hand.
+- The simulator borrows the Mac's Apple Intelligence model, so drafting only
+  works there on a Mac running macOS 26 with Apple Intelligence on. Otherwise
+  the editor explains why the button is disabled.
+- Dictation and translation depend on on-device language models too; try them
+  on a phone.
 
 ## Caveats
 

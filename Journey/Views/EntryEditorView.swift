@@ -1,6 +1,7 @@
 import PhotosUI
 import SwiftData
 import SwiftUI
+import Translation
 
 struct EntryDraft: Identifiable {
     let id = UUID()
@@ -13,6 +14,14 @@ struct EntryDraft: Identifiable {
     var longitude: Double?
     var assetIDs: [String] = []
     var visit: Visit?
+    var narrative = ""
+    var narrativeSource: NarrativeSource = .user
+    // The narrative as its source left it; any difference at save time means the user edited it.
+    var sourcedNarrative = ""
+    var translationLanguage = ""
+    var translatedTitle = ""
+    var translatedBody = ""
+    var translatedNarrative = ""
 
     init(day: Date) {
         date = Calendar.current.isDateInToday(day)
@@ -29,6 +38,13 @@ struct EntryDraft: Identifiable {
         latitude = entry.latitude
         longitude = entry.longitude
         assetIDs = entry.mediaAssetIDs
+        narrative = entry.narrative
+        narrativeSource = entry.narrativeSource
+        sourcedNarrative = entry.narrative
+        translationLanguage = entry.translationLanguage
+        translatedTitle = entry.translatedTitle
+        translatedBody = entry.translatedBody
+        translatedNarrative = entry.translatedNarrative
     }
 
     init(stop: DayTimeline.Stop) {
@@ -39,12 +55,30 @@ struct EntryDraft: Identifiable {
         longitude = stop.visit.longitude
         assetIDs = stop.assetIDs
     }
+
+    var originalTexts: EntryTranslator.Texts {
+        EntryTranslator.Texts(title: title, body: body, narrative: narrative)
+    }
 }
 
 struct EntryEditorView: View {
+    private enum Field: Hashable {
+        case title, place, notes, story
+    }
+
     let journal: Journal
     @State private var draft: EntryDraft
     @State private var pickerItems: [PhotosPickerItem] = []
+    @State private var isPickingDayPhotos = false
+    @State private var isDrafting = false
+    @State private var draftError: String?
+    @State private var translationConfig: TranslationSession.Configuration?
+    @State private var translationTarget: String?
+    @State private var isTranslating = false
+    @State private var translationError: String?
+    @State private var dictation = Dictation()
+    @AppStorage("dictationLanguage") private var dictationLanguage = "en"
+    @FocusState private var focusedField: Field?
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
 
@@ -58,29 +92,21 @@ struct EntryEditorView: View {
             Form {
                 Section {
                     TextField("Title", text: $draft.title)
+                        .focused($focusedField, equals: .title)
                     TextField("Place", text: $draft.placeName)
+                        .focused($focusedField, equals: .place)
                     DatePicker("When", selection: $draft.date)
                 }
 
                 Section("Notes") {
                     TextEditor(text: $draft.body)
                         .frame(minHeight: 160)
+                        .focused($focusedField, equals: .notes)
                 }
 
-                Section("Photos & videos") {
-                    if !draft.assetIDs.isEmpty {
-                        AssetGrid(ids: draft.assetIDs) { id in
-                            draft.assetIDs.removeAll { $0 == id }
-                        }
-                    }
-                    PhotosPicker(
-                        selection: $pickerItems,
-                        matching: .any(of: [.images, .videos]),
-                        photoLibrary: .shared()
-                    ) {
-                        Label("Add Photos & Videos", systemImage: "photo.badge.plus")
-                    }
-                }
+                mediaSection
+                storySection
+                translationSection
             }
             .navigationTitle(draft.entry == nil ? "New Entry" : "Edit Entry")
             .navigationBarTitleDisplayMode(.inline)
@@ -94,6 +120,30 @@ struct EntryEditorView: View {
                         dismiss()
                     }
                 }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Menu {
+                        Picker("Dictation Language", selection: $dictationLanguage) {
+                            ForEach(EntryTranslator.languages, id: \.code) { language in
+                                Text(language.name).tag(language.code)
+                            }
+                        }
+                    } label: {
+                        Text(dictationLanguage.uppercased())
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .disabled(dictation.isListening || dictation.isPreparing)
+                    Text(dictationStatus)
+                        .font(.footnote)
+                        .foregroundStyle(dictation.errorMessage == nil ? Color.secondary : Color.red)
+                        .lineLimit(1)
+                        .truncationMode(.head)
+                    Spacer()
+                    Button(dictation.isListening ? "Stop Dictation" : "Dictate",
+                           systemImage: dictation.isListening ? "stop.circle.fill" : "mic.fill",
+                           action: toggleDictation)
+                        .tint(dictation.isListening ? .red : .accentColor)
+                        .disabled(focusedField == nil || dictation.isPreparing)
+                }
             }
             .onChange(of: pickerItems) { _, items in
                 guard !items.isEmpty else { return }
@@ -101,6 +151,212 @@ struct EntryEditorView: View {
                 draft.assetIDs.append(contentsOf: newIDs)
                 pickerItems = []
             }
+            .sheet(isPresented: $isPickingDayPhotos) {
+                DayPhotoPicker(day: draft.date, selection: $draft.assetIDs)
+            }
+            .translationTask(translationConfig) { session in
+                await translate(with: session)
+            }
+            .onDisappear {
+                Task { await dictation.stop() }
+            }
+        }
+    }
+
+    private var mediaSection: some View {
+        Section("Photos & videos") {
+            if !draft.assetIDs.isEmpty {
+                AssetGrid(ids: draft.assetIDs) { id in
+                    draft.assetIDs.removeAll { $0 == id }
+                }
+            }
+            Button {
+                isPickingDayPhotos = true
+            } label: {
+                Label("Add from \(draft.date.formatted(.dateTime.day().month()))", systemImage: "photo.badge.plus")
+            }
+            PhotosPicker(
+                selection: $pickerItems,
+                matching: .any(of: [.images, .videos]),
+                photoLibrary: .shared()
+            ) {
+                Label("Browse All Photos", systemImage: "photo.on.rectangle.angled")
+            }
+        }
+    }
+
+    private var storySection: some View {
+        Section {
+            TextEditor(text: $draft.narrative)
+                .frame(minHeight: 120)
+                .disabled(isDrafting)
+                .focused($focusedField, equals: .story)
+            Button {
+                Task { await draftNarrative() }
+            } label: {
+                if isDrafting {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                        Text("Drafting…")
+                    }
+                } else {
+                    Label(draft.narrative.isEmpty ? "Draft with Apple Intelligence" : "Redraft with Apple Intelligence",
+                          systemImage: "sparkles")
+                }
+            }
+            .disabled(isDrafting || NarrativeDrafter.unavailableReason != nil)
+        } header: {
+            Text("Story")
+        } footer: {
+            if let reason = NarrativeDrafter.unavailableReason {
+                Text(reason)
+            } else if let draftError {
+                Text(draftError).foregroundStyle(.red)
+            } else {
+                Text("Written on your iPhone from the place, the time, your notes and what's in your photos. Your notes are never changed.")
+            }
+        }
+    }
+
+    private var translationSection: some View {
+        Section {
+            if !draft.translationLanguage.isEmpty {
+                TextField("Title", text: $draft.translatedTitle)
+                if !draft.body.isEmpty || !draft.translatedBody.isEmpty {
+                    translatedEditor("Notes", text: $draft.translatedBody)
+                }
+                if !draft.narrative.isEmpty || !draft.translatedNarrative.isEmpty {
+                    translatedEditor("Story", text: $draft.translatedNarrative)
+                }
+            }
+            Menu {
+                ForEach(EntryTranslator.languages, id: \.code) { language in
+                    Button("To \(language.name)") { requestTranslation(to: language.code) }
+                }
+            } label: {
+                if isTranslating {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                        Text("Translating…")
+                    }
+                } else {
+                    Label(draft.translationLanguage.isEmpty ? "Translate" : "Translate Again", systemImage: "translate")
+                }
+            }
+            .disabled(isTranslating)
+        } header: {
+            Text(draft.translationLanguage.isEmpty
+                 ? "Translation"
+                 : "Translation · \(EntryTranslator.name(for: draft.translationLanguage))")
+        } footer: {
+            if let translationError {
+                Text(translationError).foregroundStyle(.red)
+            } else {
+                Text("Translated on your iPhone. What you wrote stays as it is.")
+            }
+        }
+    }
+
+    private func translatedEditor(_ label: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            TextEditor(text: text)
+                .frame(minHeight: 80)
+        }
+    }
+
+    private var dictationStatus: String {
+        if let error = dictation.errorMessage { return error }
+        if dictation.isPreparing { return "Getting ready…" }
+        if dictation.isListening { return dictation.partialText.isEmpty ? "Listening…" : dictation.partialText }
+        return ""
+    }
+
+    private func toggleDictation() {
+        if dictation.isListening {
+            Task { await dictation.stop() }
+            return
+        }
+        guard let field = focusedField else { return }
+        Task {
+            await dictation.start(language: dictationLanguage) { text in
+                append(text, to: focusedField ?? field)
+            }
+        }
+    }
+
+    private func append(_ text: String, to field: Field) {
+        let piece = text.trimmingCharacters(in: .whitespaces)
+        guard !piece.isEmpty else { return }
+        func joined(_ existing: String) -> String {
+            guard !existing.isEmpty else { return piece }
+            let separator = existing.hasSuffix(" ") || existing.hasSuffix("\n") ? "" : " "
+            return existing + separator + piece
+        }
+        switch field {
+        case .title: draft.title = joined(draft.title)
+        case .place: draft.placeName = joined(draft.placeName)
+        case .notes: draft.body = joined(draft.body)
+        case .story: draft.narrative = joined(draft.narrative)
+        }
+    }
+
+    private func requestTranslation(to code: String) {
+        translationError = nil
+        let texts = draft.originalTexts
+        guard !texts.isEmpty else {
+            translationError = "Write something to translate first."
+            return
+        }
+        if EntryTranslator.detectLanguage(of: texts) == code {
+            translationError = "This entry is already in \(EntryTranslator.name(for: code))."
+            return
+        }
+        // Re-running the same configuration needs invalidate(); a new target starts a new session.
+        if translationConfig != nil, translationTarget == code {
+            translationConfig?.invalidate()
+        } else {
+            translationTarget = code
+            translationConfig = TranslationSession.Configuration(target: Locale.Language(identifier: code))
+        }
+    }
+
+    private func translate(with session: TranslationSession) async {
+        guard let code = translationTarget else { return }
+        isTranslating = true
+        defer { isTranslating = false }
+        do {
+            let result = try await EntryTranslator.translate(draft.originalTexts, with: session)
+            draft.translationLanguage = code
+            draft.translatedTitle = result.title
+            draft.translatedBody = result.body
+            draft.translatedNarrative = result.narrative
+        } catch {
+            translationError = error.localizedDescription
+        }
+    }
+
+    private func draftNarrative() async {
+        isDrafting = true
+        draftError = nil
+        defer { isDrafting = false }
+        let labels = await PhotoLabeler.labels(for: draft.assetIDs)
+        let context = NarrativeDrafter.Context(
+            title: draft.title,
+            place: draft.placeName,
+            date: draft.date,
+            notes: draft.body,
+            photoLabels: labels,
+            mediaCount: draft.assetIDs.count
+        )
+        do {
+            try await NarrativeDrafter.draft(context) { draft.narrative = $0 }
+            draft.narrativeSource = .onDevice
+            draft.sourcedNarrative = draft.narrative
+        } catch {
+            draftError = NarrativeDrafter.message(for: error)
         }
     }
 
@@ -121,6 +377,12 @@ struct EntryEditorView: View {
         entry.latitude = draft.latitude
         entry.longitude = draft.longitude
         entry.mediaAssetIDs = draft.assetIDs
+        entry.narrative = draft.narrative.trimmingCharacters(in: .whitespacesAndNewlines)
+        entry.narrativeSource = draft.narrative == draft.sourcedNarrative ? draft.narrativeSource : .user
+        entry.translationLanguage = draft.translationLanguage
+        entry.translatedTitle = draft.translatedTitle
+        entry.translatedBody = draft.translatedBody
+        entry.translatedNarrative = draft.translatedNarrative
         entry.updatedAt = .now
         if let visit = draft.visit, !(entry.visits ?? []).contains(visit) {
             entry.visits = (entry.visits ?? []) + [visit]
