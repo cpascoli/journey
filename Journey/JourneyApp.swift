@@ -9,14 +9,28 @@ struct JourneyApp: App {
     init() {
         let container: ModelContainer
         do {
-            container = try ModelContainer(for: Journal.self, Entry.self, Visit.self)
+            let configuration = ModelConfiguration(isStoredInMemoryOnly: Self.isDemo)
+            container = try ModelContainer(for: Journal.self, Entry.self, Visit.self, configurations: configuration)
         } catch {
             fatalError("Could not open the journal store: \(error)")
         }
         Journal.ensureDefault(in: container.mainContext)
+        #if DEBUG
+        if Self.isDemo {
+            DemoData.seed(in: container.mainContext)
+        }
+        #endif
         self.container = container
         // Created at launch so visits delivered while the app was relaunched in the background are captured.
         _locationService = State(initialValue: LocationService(context: container.mainContext))
+    }
+
+    private static var isDemo: Bool {
+        #if DEBUG
+        DemoData.isEnabled
+        #else
+        false
+        #endif
     }
 
     var body: some Scene {

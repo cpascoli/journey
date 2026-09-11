@@ -29,6 +29,7 @@ struct JournalMenu: View {
                     .font(.caption.weight(.semibold))
             }
         }
+        .accessibilityIdentifier("journalMenu")
         .alert("New Journal", isPresented: $isNaming) {
             TextField("Name", text: $newName)
             Button("Create", action: createJournal)
