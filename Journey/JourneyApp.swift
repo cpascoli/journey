@@ -46,6 +46,8 @@ struct RootView: View {
     @Query(sort: \Journal.createdAt) private var journals: [Journal]
     @AppStorage("selectedJournalID") private var selectedJournalID = ""
     @State private var day = Calendar.current.startOfDay(for: .now)
+    @State private var tab = RootTab.write
+    @AppStorage("appearance") private var appearance = AppearanceMode.system
 
     private var journal: Journal? {
         journals.first { $0.id.uuidString == selectedJournalID }
@@ -54,15 +56,45 @@ struct RootView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            if let journal {
-                DayView(day: $day, journal: journal)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            JournalMenu(journals: journals, current: journal, selectedID: $selectedJournalID)
-                        }
+        if let journal {
+            // Write stays the first tab: DemoWalkthrough expects to land on the day view.
+            let subtitle = journals.count > 1 ? journal.name : nil
+            TabView(selection: $tab) {
+                Tab("Write", systemImage: "square.and.pencil", value: RootTab.write) {
+                    NavigationStack {
+                        DayView(day: $day, journal: journal)
+                            .journalSubtitle(subtitle)
                     }
+                }
+                Tab("Calendar", systemImage: "calendar", value: RootTab.calendar) {
+                    NavigationStack {
+                        CalendarView(journal: journal)
+                            .journalSubtitle(subtitle)
+                    }
+                }
+                Tab("Settings", systemImage: "gearshape", value: RootTab.settings) {
+                    NavigationStack {
+                        SettingsView(journals: journals, current: journal, selectedID: $selectedJournalID)
+                    }
+                }
             }
+            .preferredColorScheme(appearance.colorScheme)
+        }
+    }
+}
+
+private enum RootTab {
+    case write, calendar, settings
+}
+
+private extension View {
+    /// Names the active journal under the title, only when there's more than one to confuse it with.
+    @ViewBuilder
+    func journalSubtitle(_ name: String?) -> some View {
+        if let name {
+            navigationSubtitle(name)
+        } else {
+            self
         }
     }
 }

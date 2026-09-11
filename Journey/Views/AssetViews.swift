@@ -3,7 +3,8 @@ import SwiftUI
 
 struct AssetThumbnail: View {
     let localIdentifier: String
-    var size: CGFloat = 72
+    /// Fixed square side, or nil to fill whatever frame the parent gives it.
+    var size: CGFloat? = 72
 
     @State private var image: UIImage?
     @State private var isVideo = false
@@ -27,11 +28,13 @@ struct AssetThumbnail: View {
             }
         }
         .frame(width: size, height: size)
+        .frame(minWidth: 0, maxWidth: size == nil ? .infinity : nil, minHeight: 0, maxHeight: size == nil ? .infinity : nil)
+        .clipped()
         .clipShape(.rect(cornerRadius: 8))
         .task(id: localIdentifier) {
             guard let asset = PHAsset.fetchAssets(withLocalIdentifiers: [localIdentifier], options: nil).firstObject else { return }
             isVideo = asset.mediaType == .video
-            image = await PhotoLibrary.thumbnail(for: asset, side: size * displayScale)
+            image = await PhotoLibrary.thumbnail(for: asset, side: (size ?? 200) * displayScale)
         }
     }
 }

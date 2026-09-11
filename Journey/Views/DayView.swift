@@ -71,18 +71,21 @@ struct DayView: View {
             }
         }
         .navigationTitle(day.formatted(.dateTime.weekday(.abbreviated).month().day()))
+        // Day navigation lives in the top bar: the floating tab bar covers a bottom bar.
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button("New Entry", systemImage: "plus") { editorDraft = EntryDraft(day: day) }
+            if !isToday {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Today") { day = Calendar.current.startOfDay(for: .now) }
+                }
             }
-            ToolbarItemGroup(placement: .bottomBar) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
                 Button("Previous Day", systemImage: "chevron.left") { shiftDay(by: -1) }
-                Spacer()
-                Button("Today") { day = Calendar.current.startOfDay(for: .now) }
-                    .disabled(isToday)
-                Spacer()
                 Button("Next Day", systemImage: "chevron.right") { shiftDay(by: 1) }
                     .disabled(isToday)
+            }
+            ToolbarSpacer(.fixed, placement: .topBarTrailing)
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("New Entry", systemImage: "plus") { editorDraft = EntryDraft(day: day) }
             }
         }
         .sheet(item: $editorDraft) { draft in

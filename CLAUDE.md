@@ -44,6 +44,12 @@ xcodebuild -project Journey.xcodeproj -scheme Journey \
   default, relationships are optional, no `@Attribute(.unique)`. Store enums as
   raw strings with a computed accessor (see `Entry.publishStatus`).
 - Media is never copied: entries store Photos `localIdentifier`s.
+- Three tabs: **Write** (`DayView` + `EntryEditorView`, edit mode),
+  **Calendar** (`CalendarView` → `JournalPageView` → `MediaViewer`, read mode)
+  and **Settings** (journal selection, dictation language, permissions). The
+  active journal shows as a navigation subtitle once there's more than one.
+  Write must stay the first tab; `DemoWalkthrough` expects to land on it.
+  Calendar scales zoom in by tapping (year → month, week/month → day page).
 - `DayTimeline` owns the photo-to-visit matching rule (±10 min around the
   visit, and ≤250 m when the photo has a location).
 - `Visit.source` is `.tracked` (Core Location) or `.photos` (rebuilt by
@@ -107,7 +113,7 @@ xcodebuild -project Journey.xcodeproj -scheme Journey \
 
 Decisions already made, so new work fits them:
 
-- **Views:** calendar (year/month/week/day zoom) and map (clustered pins).
+- **Views:** a map view (clustered pins) alongside the calendar.
 - **Narration history:** on-device drafting exists (see Code). Still to come:
   a revision history per entry, so ChatGPT proposals can be accepted,
   rejected or reverted to an earlier version.

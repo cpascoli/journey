@@ -32,14 +32,14 @@ final class DemoWalkthrough: XCTestCase {
         }
         // Interacting with the app gives the interruption monitor a chance to run.
         app.swipeDown()
-        XCTAssertTrue(app.buttons["journalMenu"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["New Entry"].waitForExistence(timeout: 10))
         beat(1.0)
         app.terminate()
     }
 
     func testRecordDemo() {
         let app = launchDemo()
-        XCTAssertTrue(app.buttons["journalMenu"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["New Entry"].waitForExistence(timeout: 10))
         mark("DEMO-START")
         beat(2.0)
 
@@ -71,15 +71,27 @@ final class DemoWalkthrough: XCTestCase {
         app.buttons["Save"].tap()
         beat(2.2)
 
-        // 4. More than one journal.
-        app.buttons["journalMenu"].tap()
-        beat(1.2)
-        app.buttons["Work Trips"].tap()
-        beat(1.8)
-        app.buttons["journalMenu"].tap()
-        beat(1.0)
-        app.buttons["Main"].tap()
+        // 4. Read the day back as a journal page, and open its photos full screen.
+        app.tabBars.buttons["Calendar"].tap()
+        beat(2.2)
+        app.buttons["Day"].tap()
         beat(2.0)
+        let photo = app.buttons["pageMedia"].firstMatch
+        XCTAssertTrue(photo.waitForExistence(timeout: 5))
+        for _ in 0..<3 where !photo.isHittable {
+            app.swipeUp()
+            beat(1.0)
+        }
+        photo.tap()
+        beat(1.8)
+        app.swipeLeft()
+        beat(1.5)
+        app.buttons["Close"].tap()
+        beat(1.2)
+
+        // 5. Journals and the rest of the settings.
+        app.tabBars.buttons["Settings"].tap()
+        beat(2.2)
         mark("DEMO-END")
     }
 

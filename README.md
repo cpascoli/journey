@@ -25,12 +25,17 @@ lets you write about each day — in one journal or several.
 - **Drafts the story for you.** In the entry editor, Apple Intelligence writes
   a short first-person draft from the place, the time, your notes and what's
   in your photos — entirely on the phone, and kept apart from your own notes.
-- **More than one journal.** Everything goes to *Main* by default; add others
-  from the journal menu when you want them.
+- **Read it like a journal.** The *Calendar* tab zooms from year to month,
+  week and day; each day opens as a page — serif type on warm paper, photos
+  laid out with the writing, and every photo or video a tap away from full
+  screen.
+- **More than one journal.** Everything goes to *Main* by default; add,
+  rename and switch journals in *Settings*, and the one you're in shows under
+  each screen's title. Settings also has a light / dark / system appearance
+  switch.
 
 ### On the way
 
-- **Calendar view** that zooms from year to month, week and day.
 - **Map view** with entries as pins that cluster as you zoom out.
 - **Publishing** selected entries to your own website. The site exposes an API
   that a custom ChatGPT GPT can use to read your journal and propose richer

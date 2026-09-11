@@ -1,3 +1,4 @@
+import AVFoundation
 import Photos
 import UIKit
 
@@ -19,6 +20,29 @@ enum PhotoLibrary {
         options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: true)]
         let result = PHAsset.fetchAssets(with: options)
         return result.objects(at: IndexSet(integersIn: 0..<result.count))
+    }
+
+    /// The whole image, scaled to fit `size` (in pixels).
+    static func image(for asset: PHAsset, fitting size: CGSize) async -> UIImage? {
+        let options = PHImageRequestOptions()
+        options.deliveryMode = .highQualityFormat
+        options.isNetworkAccessAllowed = true
+        return await withCheckedContinuation { continuation in
+            PHImageManager.default().requestImage(for: asset, targetSize: size, contentMode: .aspectFit, options: options) { image, _ in
+                continuation.resume(returning: image)
+            }
+        }
+    }
+
+    static func playerItem(for asset: PHAsset) async -> AVPlayerItem? {
+        let options = PHVideoRequestOptions()
+        options.deliveryMode = .automatic
+        options.isNetworkAccessAllowed = true
+        return await withCheckedContinuation { continuation in
+            PHImageManager.default().requestPlayerItem(forVideo: asset, options: options) { item, _ in
+                continuation.resume(returning: item)
+            }
+        }
     }
 
     static func thumbnail(for asset: PHAsset, side: CGFloat) async -> UIImage? {
