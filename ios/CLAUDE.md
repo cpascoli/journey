@@ -1,8 +1,12 @@
-# Journey
+# Journey — iPhone app
 
-Personal iOS travel journal: records place visits, matches the photos and
-videos taken at each, and lets the user write entries per day across one or
-more journals. See README.md for features and roadmap.
+The iPhone app in the Journey monorepo: records place visits, matches the
+photos and videos taken at each, and lets the user write entries per day
+across one or more journals. See README.md in this folder for features.
+Rules shared with the website — tag sharing rules and the planned publishing
+design — are in `../CLAUDE.md`.
+
+Paths and commands below are relative to `ios/`.
 
 ## Build and run
 
@@ -54,13 +58,10 @@ xcodebuild -project Journey.xcodeproj -scheme Journey \
   with it on a simulator, install the new build over it, and check the data is
   still there.
 - Media is never copied: entries store Photos `localIdentifier`s.
-- Tags (`Tag`, many-to-many with `Entry`, shared across journals) double as
-  sharing rules for the future website: an invite may see an entry only if the
-  invite includes **all** of the entry's tags; untagged entries are visible to
-  every invite. Never let an edit widen access implicitly — a tag that's in use
-  can't be deleted (it would leave entries untagged, i.e. public), and tags are
-  referenced by `id`, so renames are safe. Publishing must also respect the
-  planned per-entry visibility, so untagged ≠ published.
+- Tags (`Tag`, many-to-many with `Entry`, shared across journals) are also
+  the website's sharing rules — read `../CLAUDE.md` before changing how they're
+  stored or deleted. In the app, a tag that's in use can't be deleted, and
+  tags are referenced by `id`, so renames are safe.
 - Three tabs: **Write** (`DayView` + `EntryEditorView`, edit mode),
   **Calendar** (`CalendarView` → `JournalPageView` → `MediaViewer`, read mode)
   and **Settings** (journal selection, dictation language, permissions). The
@@ -125,19 +126,3 @@ xcodebuild -project Journey.xcodeproj -scheme Journey \
 - To tap inside the simulator from a script, System Events `click at` fails
   (-25204); post `CGEvent` mouse events instead. The phone screen is the
   Simulator window's `AXGroup` element, 1:1 in points.
-
-## Planned direction
-
-Decisions already made, so new work fits them:
-
-- **Views:** a map view (clustered pins) alongside the calendar.
-- **Narration history:** on-device drafting exists (see Code). Still to come:
-  a revision history per entry, so ChatGPT proposals can be accepted,
-  rejected or reverted to an earlier version.
-- **Publishing:** entries get a visibility (local only / private sync /
-  public). A separate website exposes an agent-friendly API; a custom GPT uses
-  it to read entries and submit narrative *proposals* tied to the revision
-  they're based on. The app accepts or rejects them; only accepted text is
-  ever public. The GPT's token must not be able to delete or publish.
-- A ChatGPT subscription gives no API access, so the app itself never calls
-  OpenAI.

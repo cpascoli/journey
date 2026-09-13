@@ -146,7 +146,7 @@ func render(_ palette: Palette, gray: Bool, to path: String) {
     print("wrote \(path)")
 }
 
-// usage: swift Tools/make-icon.swift [out dir]   (run from the repo root)
+// usage: swift Tools/make-icon.swift [out dir]   (run from ios/)
 let out = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "Journey/Assets.xcassets/AppIcon.appiconset"
 render(day, gray: false, to: "\(out)/AppIcon.png")
 render(night, gray: false, to: "\(out)/AppIcon-Dark.png")

@@ -1,8 +1,9 @@
-# Journey
+# Journey for iPhone
 
-A personal iOS travel journal that fills itself in as you go: it records the
-places you visit, pairs them with the photos and videos you took there, and
-lets you write about each day — in one journal or several.
+The iPhone app of [Journey](../README.md), a personal travel journal that
+fills itself in as you go: it records the places you visit, pairs them with
+the photos and videos you took there, and lets you write about each day — in
+one journal or several. Commands below run from this `ios/` folder.
 
 ![Journey walkthrough](Docs/demo.gif)
 
@@ -153,6 +154,7 @@ publish state, and how precisely to share the location.
 3. Generate the project and open it:
 
    ```sh
+   cd ios
    xcodegen generate
    open Journey.xcodeproj
    ```
@@ -172,6 +174,7 @@ source folders are Xcode *synchronised folders*, so a file added under
 ### From the terminal
 
 ```sh
+cd ios
 xcodegen generate
 xcodebuild -project Journey.xcodeproj -scheme Journey \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
@@ -185,8 +188,9 @@ is never touched. The `Journey-Demo` scheme passes the flag for you.
 
 ## Regenerating the demo
 
-Run this **by hand**, and only when a change is worth showing. Each recording
-commits a new binary, and the GIF stays accurate across most changes.
+Run this **by hand**, from `ios/`, and only when a change is worth showing.
+Each recording commits a new binary, and the GIF stays accurate across most
+changes.
 
 ```sh
 Tools/record-demo.sh                          # defaults
@@ -209,7 +213,7 @@ frameworks. It merges identical consecutive frames into one longer frame, which
 is what keeps the pauses between steps from bloating the file.
 
 The app icon — a sunset chedi over the Andaman Sea, with dark and tinted
-variants — is generated too:
+variants — is generated too (from `ios/`):
 
 ```sh
 swift Tools/make-icon.swift
