@@ -1,6 +1,4 @@
 # Journey website: Netlify builds the Next.js app in web/.
-# Netlify provisions the Next.js runtime (OpenNext) itself; don't pin
-# @netlify/plugin-nextjs unless you mean to freeze the adapter version.
 
 [build]
   base = "web"
@@ -13,6 +11,12 @@
 [build.environment]
   NODE_VERSION = "22"
   # pnpm comes from the packageManager field in web/package.json.
+
+# Named explicitly because Netlify detected Next.js here but didn't install its
+# runtime on its own: the first deploy served the raw .next folder as static
+# files and every route 404ed. The version is pinned in web/package.json.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 [dev]
   command = "pnpm dev"
