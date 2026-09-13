@@ -31,28 +31,50 @@ struct CalendarView: View {
     let journal: Journal
 
     @Query(sort: \Entry.date) private var allEntries: [Entry]
+    @Query(sort: \Tag.name) private var tags: [Tag]
+    @State private var tagFilter: UUID?
     @State private var scale = CalendarScale.month
     @State private var anchor = Calendar.current.startOfDay(for: .now)
 
     private let calendar = Calendar.current
 
     var body: some View {
-        let entriesByDay = Dictionary(grouping: allEntries.filter { $0.journal?.id == journal.id }) {
+        // A filter whose tag was deleted simply stops applying.
+        let activeTag = tags.first { $0.id == tagFilter }
+        let entriesByDay = Dictionary(grouping: allEntries.filter { entry in
+            entry.journal?.id == journal.id
+                && (activeTag == nil || (entry.tags ?? []).contains { $0.id == activeTag?.id })
+        }) {
             calendar.startOfDay(for: $0.date)
         }
         content(entriesByDay)
             .safeAreaInset(edge: .top, spacing: 0) {
-                HStack(spacing: 12) {
-                    Picker("Scale", selection: $scale.animation()) {
-                        ForEach(CalendarScale.allCases) { scale in
-                            Text(scale.title).tag(scale)
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 12) {
+                        Picker("Scale", selection: $scale.animation()) {
+                            ForEach(CalendarScale.allCases) { scale in
+                                Text(scale.title).tag(scale)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        if !tags.isEmpty {
+                            tagFilterMenu(active: activeTag)
+                        }
+                        Button("Today") {
+                            withAnimation { anchor = calendar.startOfDay(for: .now) }
+                        }
+                        .disabled(calendar.isDate(anchor, equalTo: .now, toGranularity: scale.component))
+                    }
+                    if let activeTag {
+                        HStack(spacing: 6) {
+                            Text("Only")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            TagChip(tag: activeTag)
+                            Button("Show All") { tagFilter = nil }
+                                .font(.caption)
                         }
                     }
-                    .pickerStyle(.segmented)
-                    Button("Today") {
-                        withAnimation { anchor = calendar.startOfDay(for: .now) }
-                    }
-                    .disabled(calendar.isDate(anchor, equalTo: .now, toGranularity: scale.component))
                 }
                 .padding(.horizontal)
                 .padding(.vertical, 8)
@@ -85,6 +107,21 @@ struct CalendarView: View {
                 }
             }
         }
+    }
+
+    private func tagFilterMenu(active: Tag?) -> some View {
+        Menu {
+            Picker("Show", selection: $tagFilter) {
+                Text("All Entries").tag(UUID?.none)
+                ForEach(tags) { tag in
+                    Text(tag.name).tag(Optional(tag.id))
+                }
+            }
+        } label: {
+            Image(systemName: active == nil ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+                .font(.title3)
+        }
+        .accessibilityLabel(active.map { "Showing \($0.name)" } ?? "Filter by Tag")
     }
 
     private var weekDays: [Date] {

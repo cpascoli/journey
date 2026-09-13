@@ -43,7 +43,24 @@ xcodebuild -project Journey.xcodeproj -scheme Journey \
 - SwiftData models must stay CloudKit-compatible: every stored property has a
   default, relationships are optional, no `@Attribute(.unique)`. Store enums as
   raw strings with a computed accessor (see `Entry.publishStatus`).
+- **The user has real journal data on their phone: model changes must never
+  lose it.** The store has no `VersionedSchema`, and relies on SwiftData's
+  automatic lightweight migration, so only make additive changes: new stored
+  properties with a default value, new models, new optional relationships.
+  Never rename, remove or retype a stored property, or change a relationship's
+  shape, without first introducing a `VersionedSchema` + `SchemaMigrationPlan`.
+  Before shipping a model change, prove it: build the oldest shipped commit
+  (`648691b`, the first with bundle ID `com.carlopascoli.journey`), create data
+  with it on a simulator, install the new build over it, and check the data is
+  still there.
 - Media is never copied: entries store Photos `localIdentifier`s.
+- Tags (`Tag`, many-to-many with `Entry`, shared across journals) double as
+  sharing rules for the future website: an invite may see an entry only if the
+  invite includes **all** of the entry's tags; untagged entries are visible to
+  every invite. Never let an edit widen access implicitly — a tag that's in use
+  can't be deleted (it would leave entries untagged, i.e. public), and tags are
+  referenced by `id`, so renames are safe. Publishing must also respect the
+  planned per-entry visibility, so untagged ≠ published.
 - Three tabs: **Write** (`DayView` + `EntryEditorView`, edit mode),
   **Calendar** (`CalendarView` → `JournalPageView` → `MediaViewer`, read mode)
   and **Settings** (journal selection, dictation language, permissions). The

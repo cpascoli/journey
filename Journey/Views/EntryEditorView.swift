@@ -22,6 +22,7 @@ struct EntryDraft: Identifiable {
     var translatedTitle = ""
     var translatedBody = ""
     var translatedNarrative = ""
+    var tags: [Tag] = []
 
     init(day: Date) {
         date = Calendar.current.isDateInToday(day)
@@ -45,6 +46,7 @@ struct EntryDraft: Identifiable {
         translatedTitle = entry.translatedTitle
         translatedBody = entry.translatedBody
         translatedNarrative = entry.translatedNarrative
+        tags = entry.tags ?? []
     }
 
     init(stop: DayTimeline.Stop) {
@@ -79,6 +81,7 @@ struct EntryEditorView: View {
     @State private var dictation = Dictation()
     @AppStorage("dictationLanguage") private var dictationLanguage = "en"
     @FocusState private var focusedField: Field?
+    @Query(sort: \Tag.name) private var allTags: [Tag]
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
 
@@ -97,6 +100,8 @@ struct EntryEditorView: View {
                         .focused($focusedField, equals: .place)
                     DatePicker("When", selection: $draft.date)
                 }
+
+                tagsSection
 
                 Section("Notes") {
                     TextEditor(text: $draft.body)
@@ -159,6 +164,33 @@ struct EntryEditorView: View {
             }
             .onDisappear {
                 Task { await dictation.stop() }
+            }
+        }
+    }
+
+    private var tagsSection: some View {
+        Section("Tags") {
+            if allTags.isEmpty {
+                Text("Create tags in Settings to label entries.")
+                    .foregroundStyle(.secondary)
+            } else {
+                FlowLayout {
+                    ForEach(allTags) { tag in
+                        let isSelected = draft.tags.contains { $0.id == tag.id }
+                        Button {
+                            if isSelected {
+                                draft.tags.removeAll { $0.id == tag.id }
+                            } else {
+                                draft.tags.append(tag)
+                            }
+                        } label: {
+                            TagChip(tag: tag, isSelected: isSelected)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(isSelected ? .isSelected : [])
+                    }
+                }
+                .padding(.vertical, 4)
             }
         }
     }
@@ -383,6 +415,7 @@ struct EntryEditorView: View {
         entry.translatedTitle = draft.translatedTitle
         entry.translatedBody = draft.translatedBody
         entry.translatedNarrative = draft.translatedNarrative
+        entry.tags = draft.tags
         entry.updatedAt = .now
         if let visit = draft.visit, !(entry.visits ?? []).contains(visit) {
             entry.visits = (entry.visits ?? []) + [visit]

@@ -10,7 +10,7 @@ struct JourneyApp: App {
         let container: ModelContainer
         do {
             let configuration = ModelConfiguration(isStoredInMemoryOnly: Self.isDemo)
-            container = try ModelContainer(for: Journal.self, Entry.self, Visit.self, configurations: configuration)
+            container = try ModelContainer(for: Journal.self, Entry.self, Visit.self, Tag.self, configurations: configuration)
         } catch {
             fatalError("Could not open the journal store: \(error)")
         }

@@ -29,6 +29,10 @@ lets you write about each day — in one journal or several.
   week and day; each day opens as a page — serif type on warm paper, photos
   laid out with the writing, and every photo or video a tap away from full
   screen.
+- **Tags.** Define your own in *Settings* — family, friends, sport — tap them
+  onto entries, and filter the calendar by one. They're also how sharing will
+  work: an invite sees an entry only if it's allowed every tag on it, and
+  untagged entries are for everyone.
 - **More than one journal.** Everything goes to *Main* by default; add,
   rename and switch journals in *Settings*, and the one you're in shows under
   each screen's title. Settings also has a light / dark / system appearance

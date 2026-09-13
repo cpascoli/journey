@@ -3,6 +3,11 @@ import SwiftData
 import SwiftUI
 import UIKit
 
+private struct TagSheet: Identifiable {
+    let id = UUID()
+    let tag: Tag?
+}
+
 enum AppearanceMode: String, CaseIterable, Identifiable {
     case system, light, dark
 
@@ -44,6 +49,9 @@ struct SettingsView: View {
     @State private var renameText = ""
     @State private var deleting: Journal?
     @State private var photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+    @Query(sort: \Tag.name) private var tags: [Tag]
+    @State private var tagSheet: TagSheet?
+    @State private var tagInUse: Tag?
 
     var body: some View {
         Form {
@@ -58,6 +66,8 @@ struct SettingsView: View {
             }
 
             journalsSection
+
+            tagsSection
 
             Section("Dictation") {
                 Picker("Language", selection: $dictationLanguage) {
@@ -97,6 +107,72 @@ struct SettingsView: View {
             if phase == .active {
                 photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
             }
+        }
+        .sheet(item: $tagSheet) { sheet in
+            TagEditorView(tag: sheet.tag, otherNames: tags.filter { $0.id != sheet.tag?.id }.map(\.name))
+        }
+        .alert(
+            "“\(tagInUse?.name ?? "")” Is in Use",
+            isPresented: Binding(get: { tagInUse != nil }, set: { if !$0 { tagInUse = nil } })
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Remove it from its \(tagInUse.map(tagUsage) ?? "entries") first. Deleting it now would leave them untagged, and untagged entries are visible to everyone you share the journal with.")
+        }
+    }
+
+    private var tagsSection: some View {
+        Section {
+            ForEach(tags) { tag in
+                Button {
+                    tagSheet = TagSheet(tag: tag)
+                } label: {
+                    HStack {
+                        TagChip(tag: tag)
+                        Spacer()
+                        Text(tagUsage(tag))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .swipeActions {
+                    Button("Delete", systemImage: "trash", role: .destructive) { deleteTag(tag) }
+                }
+            }
+            Button("New Tag", systemImage: "plus") {
+                tagSheet = TagSheet(tag: nil)
+            }
+            if tags.isEmpty {
+                Button("Add Suggested Tags", systemImage: "wand.and.stars", action: addSuggestedTags)
+            }
+        } header: {
+            Text("Tags")
+        } footer: {
+            Text("When you share the journal, each invite can be limited to tags: an entry is shown only to invites that include all of its tags, and entries without tags are shown to everyone you invite.")
+        }
+    }
+
+    private func tagUsage(_ tag: Tag) -> String {
+        let count = tag.entries?.count ?? 0
+        return count == 1 ? "1 entry" : "\(count) entries"
+    }
+
+    private func deleteTag(_ tag: Tag) {
+        if (tag.entries?.count ?? 0) > 0 {
+            tagInUse = tag
+        } else {
+            context.delete(tag)
+        }
+    }
+
+    private func addSuggestedTags() {
+        let suggestions: [(String, TagColor)] = [
+            ("Family", .pink), ("Friends", .blue), ("Sport", .green), ("Clubbing", .purple), ("Dating", .red),
+        ]
+        for (name, color) in suggestions {
+            context.insert(Tag(name: name, color: color))
         }
     }
 

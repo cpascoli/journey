@@ -32,6 +32,7 @@ final class Entry {
 
     var journal: Journal?
     @Relationship(inverse: \Visit.entries) var visits: [Visit]? = []
+    @Relationship(inverse: \Tag.entries) var tags: [Tag]? = []
 
     init() {}
 

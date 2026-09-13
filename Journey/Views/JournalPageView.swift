@@ -138,6 +138,12 @@ private struct EntryPageSection: View {
                     .font(.system(.title2, design: .serif, weight: .semibold))
             }
 
+            if !entry.sortedTags.isEmpty {
+                FlowLayout {
+                    ForEach(entry.sortedTags) { TagChip(tag: $0) }
+                }
+            }
+
             media
 
             if !notes.isEmpty {

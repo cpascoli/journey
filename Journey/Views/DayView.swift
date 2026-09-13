@@ -136,6 +136,11 @@ private struct EntryRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(3)
             }
+            if !entry.sortedTags.isEmpty {
+                FlowLayout {
+                    ForEach(entry.sortedTags) { TagChip(tag: $0) }
+                }
+            }
             if !entry.mediaAssetIDs.isEmpty {
                 AssetStrip(ids: entry.mediaAssetIDs, size: 48)
             }
