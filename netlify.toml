@@ -1,0 +1,27 @@
+# Journey website: Netlify builds the Next.js app in web/.
+# Netlify provisions the Next.js runtime (OpenNext) itself; don't pin
+# @netlify/plugin-nextjs unless you mean to freeze the adapter version.
+
+[build]
+  base = "web"
+  command = "pnpm install --frozen-lockfile && pnpm build"
+  publish = ".next"
+  # Runs from the base directory. Skips deploys for commits that only touch
+  # the iOS app or the repo docs.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../netlify.toml"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # pnpm comes from the packageManager field in web/package.json.
+
+[dev]
+  command = "pnpm dev"
+  targetPort = 3000
+  port = 8888
+  autoLaunch = false
+
+# Set in the Netlify UI for the site, scoped to Builds and Functions, and
+# never as NEXT_PUBLIC_*:
+#   SUPABASE_URL
+#   SUPABASE_SERVICE_ROLE_KEY
+#   JOURNEY_API_KEYS   JSON array of API keys (see web/README.md)

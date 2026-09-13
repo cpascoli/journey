@@ -12,8 +12,7 @@ you choose to the friends and family you invite.
 | Folder | What it is |
 | ------ | ---------- |
 | [`ios/`](ios) | The iPhone app: SwiftUI and SwiftData, with on-device AI drafting, dictation and translation. Its [README](ios/README.md) covers building and running it. |
-| `web/` | *Coming next:* the website and API that publish entries, share them by invite, and give a custom GPT an agent-friendly way to read the journal. |
-| `api/` | *Coming next:* `openapi.yaml`, the contract between the app, the website and the GPT. |
+| [`web/`](web) | The website and API, on Netlify: invite-only reading of published entries, an API for the app to publish through, and an agent API for a custom GPT. Its [README](web/README.md) covers setup and deployment. |
 
 ## How sharing will work
 

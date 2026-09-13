@@ -1,0 +1,43 @@
+# Checks the website on every push and pull request that touches it.
+# Netlify deploys main straight to production, so this is what stands between
+# a broken commit and the live site.
+name: Web
+
+on:
+  push:
+    branches: [main]
+    paths: ["web/**", "netlify.toml", ".github/workflows/web.yml"]
+  pull_request:
+    paths: ["web/**", "netlify.toml", ".github/workflows/web.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Typecheck, tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      # The build is what Netlify runs; green here means a push can't break the deploy.
+      - run: pnpm build

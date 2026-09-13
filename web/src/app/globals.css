@@ -1,0 +1,71 @@
+/* The same warm paper as the iPhone app's journal pages. */
+:root {
+  --paper: #fbf7ef;
+  --ink: #1d1b18;
+  --muted: #6f685e;
+  --accent: #b5562f;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #1c1a17;
+    --ink: #f1ece2;
+    --muted: #a39b8e;
+    --accent: #e08a5f;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+body {
+  font-family: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 18vh 1.5rem 4rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+h1 {
+  margin: 0.25rem 0 1.25rem;
+  font-size: clamp(2.75rem, 8vw, 4rem);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.lede {
+  margin: 0 0 2rem;
+  font-size: 1.25rem;
+}
+
+.note {
+  margin: 0;
+  padding-left: 1rem;
+  border-left: 2px solid var(--accent);
+  font-style: italic;
+  color: var(--muted);
+}

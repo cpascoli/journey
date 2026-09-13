@@ -3,3 +3,13 @@ xcuserdata/
 DerivedData/
 build/
 *.xcuserstate
+
+# Web
+node_modules/
+.next/
+.netlify/
+.env
+.env.local
+.env.*.local
+*.tsbuildinfo
+next-env.d.ts

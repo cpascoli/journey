@@ -4,11 +4,12 @@ Monorepo for a personal travel journal.
 
 - `ios/` — the iPhone app. `ios/CLAUDE.md` has its build commands, code rules
   and gotchas; commands there run from `ios/`.
-- `web/` — the website and API. Not started yet.
-- `api/openapi.yaml` — the API contract. Not started yet. Once it exists it is
-  the source of truth for the website's routes, the GPT's actions and the
-  app's upload code: change the contract first, then both sides, in the same
-  commit.
+- `web/` — the Next.js website and API, deployed on Netlify from `main`.
+  `web/CLAUDE.md` has its commands and rules; commands there run from `web/`.
+- The API contract is the OpenAPI documents the website serves, defined in
+  TypeScript under `web/src/lib/api/`. They are the source of truth for the
+  website's routes, the GPT's actions and the app's upload code: change the
+  contract and both sides together.
 
 ## Sharing rules (app and website)
 
@@ -40,5 +41,7 @@ Decisions already made, so new work fits them:
 
 ## Working in this repo
 
+- **A push to `main` deploys the website.** Ask before every push; approval
+  of the work is not approval to push it.
 - One topic per commit. Keep app and website changes in separate commits
   unless they change the API contract together.
