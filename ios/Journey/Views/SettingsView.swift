@@ -48,6 +48,7 @@ struct SettingsView: View {
     @State private var renaming: Journal?
     @State private var renameText = ""
     @State private var deleting: Journal?
+    @State private var journalOnWebsite: Journal?
     @State private var photoStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
     @Query(sort: \Tag.name) private var tags: [Tag]
     @State private var tagSheet: TagSheet?
@@ -68,6 +69,8 @@ struct SettingsView: View {
             journalsSection
 
             tagsSection
+
+            WebsiteSection()
 
             Section("Dictation") {
                 Picker("Language", selection: $dictationLanguage) {
@@ -102,6 +105,14 @@ struct SettingsView: View {
             Button("Delete Journal", role: .destructive, action: deleteJournal)
         } message: {
             Text("Its \(deleting.map(entryCount) ?? "entries") will be deleted too. Photos stay in your library.")
+        }
+        .alert(
+            "“\(journalOnWebsite?.name ?? "")” Has Published Entries",
+            isPresented: Binding(get: { journalOnWebsite != nil }, set: { if !$0 { journalOnWebsite = nil } })
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Unpublish them first. Deleting the journal now would leave them on your website.")
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
@@ -201,7 +212,14 @@ struct SettingsView: View {
                 .buttonStyle(.plain)
                 .swipeActions {
                     if !journal.isDefault {
-                        Button("Delete", systemImage: "trash", role: .destructive) { deleting = journal }
+                        Button("Delete", systemImage: "trash", role: .destructive) {
+                            // Its published entries would stay online.
+                            if (journal.entries ?? []).contains(where: { $0.publishStatus != .notPublished }) {
+                                journalOnWebsite = journal
+                            } else {
+                                deleting = journal
+                            }
+                        }
                     }
                     Button("Rename", systemImage: "pencil") {
                         renameText = journal.name

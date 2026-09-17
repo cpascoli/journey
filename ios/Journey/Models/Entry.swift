@@ -29,6 +29,8 @@ final class Entry {
     var remoteID: String?
     var publishedAt: Date?
     var sharedLocationPrecisionRaw: String = LocationPrecision.city.rawValue
+    // Who can read the entry on the website once it's published. Only you until you choose otherwise.
+    var visibilityRaw: String = EntryVisibility.onlyMe.rawValue
 
     var journal: Journal?
     @Relationship(inverse: \Visit.entries) var visits: [Visit]? = []
@@ -46,6 +48,11 @@ final class Entry {
         set { sharedLocationPrecisionRaw = newValue.rawValue }
     }
 
+    var visibility: EntryVisibility {
+        get { EntryVisibility(rawValue: visibilityRaw) ?? .onlyMe }
+        set { visibilityRaw = newValue.rawValue }
+    }
+
     var narrativeSource: NarrativeSource {
         get { NarrativeSource(rawValue: narrativeSourceRaw) ?? .user }
         set { narrativeSourceRaw = newValue.rawValue }
@@ -58,6 +65,14 @@ nonisolated enum NarrativeSource: String, Codable, Sendable {
 
 nonisolated enum PublishStatus: String, Codable, Sendable {
     case notPublished, published, needsUpdate
+}
+
+/// Raw values are the website's `visibility` values.
+nonisolated enum EntryVisibility: String, Codable, CaseIterable, Sendable {
+    /// Only you (and the agents your keys allow).
+    case onlyMe = "private"
+    /// People you invite, if their invite includes all of the entry's tags.
+    case invites = "shared"
 }
 
 nonisolated enum LocationPrecision: String, Codable, CaseIterable, Sendable {

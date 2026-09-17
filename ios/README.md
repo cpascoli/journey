@@ -38,13 +38,20 @@ one journal or several. Commands below run from this `ios/` folder.
   rename and switch journals in *Settings*, and the one you're in shows under
   each screen's title. Settings also has a light / dark / system appearance
   switch.
+- **Publish to your own website.** Add the website and its owner key in
+  *Settings → Website*, then tap the globe on an entry in a journal page. You
+  choose who can read it (only you, or the people you invite, limited by its
+  tags) and how precisely its location shows — city by default. Photos are
+  uploaded at up to 2048 pixels with their location and camera details
+  removed; videos stay on the phone for now. Nothing is published until you
+  tap *Publish*, and a published entry can't be deleted until it's unpublished.
 
 ### On the way
 
 - **Map view** with entries as pins that cluster as you zoom out.
-- **Publishing** selected entries to your own website. The site exposes an API
-  that a custom ChatGPT GPT can use to read your journal and propose richer
-  narration, which you accept or reject in the app.
+- **Story proposals.** The website's API lets a custom ChatGPT GPT read your
+  journal and propose richer narration, which you'll accept or reject in the
+  app.
 
 ## How it works
 
@@ -120,9 +127,9 @@ draft and it becomes yours.
 
 SwiftData, with three models: `Journal`, `Entry` and `Visit`. Every property
 has a default and every relationship is optional, which is what CloudKit
-requires — iCloud sync can be switched on later without a migration. Entries
-already carry the fields publishing will need: a stable ID, the remote ID,
-publish state, and how precisely to share the location.
+requires — iCloud sync can be switched on later without a migration. For
+publishing, entries carry a stable ID (also the website's), the remote ID,
+publish state, who can read it, and how precisely to share the location.
 
 ## Running it on your iPhone
 

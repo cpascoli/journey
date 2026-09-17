@@ -102,6 +102,27 @@ xcodebuild -project Journey.xcodeproj -scheme Journey \
 - Drafting, dictation and translation all need on-device models: verify them
   on a phone.
 
+## Publishing
+
+- `JourneyAPI` is the client for the website's owner API. The contract is
+  `../web/src/lib/api/owner-openapi.ts`: change both together.
+- `Publisher` sends the entry's tags first (entries refer to them by `id`),
+  then the entry with its full ordered `media_keys`, then only the photos the
+  website reports missing, so publishing again is safe and resumes uploads.
+- The website URL is in UserDefaults (`websiteURL`, https only); the owner key
+  is in the Keychain, this device only. Never log it or put it in a URL.
+- Photos leave the phone only through `PhotoExport`: re-encoded at up to
+  2048 px with the orientation baked in, then APP1 (EXIF, XMP), APP13 (IPTC)
+  and comment segments stripped. `JPEGMetadata` mirrors the website's
+  `findPhotoMetadata`; keep them in step, and never rely on the server to strip.
+  Videos aren't published: the website only takes photos.
+- `PublishSheet` saves visibility and location precision only when *Publish*
+  is tapped: a wider audience never takes effect implicitly. Precision
+  `hidden` sends no location at all.
+- A published entry, or a journal holding one, can't be deleted in the app:
+  unpublish first, or it would stay online. Tag renames reach the website at
+  the next publish of an entry that uses the tag.
+
 ## Demo and tools
 
 - `-demo` (Debug only) swaps in an in-memory store seeded by

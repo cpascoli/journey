@@ -9,6 +9,7 @@ struct JournalPageView: View {
 
     @State private var showTranslation = false
     @State private var editing: EntryDraft?
+    @State private var publishing: Entry?
     @State private var viewer: MediaViewerRequest?
 
     private var places: [String] {
@@ -39,7 +40,8 @@ struct JournalPageView: View {
                             entry: entry,
                             showTranslation: showTranslation,
                             onOpenMedia: { id in viewer = MediaViewerRequest(ids: dayMedia, start: id) },
-                            onEdit: { editing = EntryDraft(entry: entry) }
+                            onEdit: { editing = EntryDraft(entry: entry) },
+                            onPublish: { publishing = entry }
                         )
                     }
                 }
@@ -52,6 +54,9 @@ struct JournalPageView: View {
         .background(Color.journalPaper)
         .sheet(item: $editing) { draft in
             EntryEditorView(draft: draft, journal: journal)
+        }
+        .sheet(item: $publishing) { entry in
+            PublishSheet(entry: entry)
         }
         .fullScreenCover(item: $viewer) { request in
             MediaViewer(ids: request.ids, start: request.start)
@@ -107,6 +112,7 @@ private struct EntryPageSection: View {
     let showTranslation: Bool
     let onOpenMedia: (String) -> Void
     let onEdit: () -> Void
+    let onPublish: () -> Void
 
     private var translated: Bool { showTranslation && !entry.translationLanguage.isEmpty }
     private var title: String { pick(entry.translatedTitle, entry.title) }
@@ -128,6 +134,10 @@ private struct EntryPageSection: View {
                     .tracking(1.2)
                     .foregroundStyle(.secondary)
                 Spacer()
+                Button("Publish", systemImage: entry.publishStatus.symbol, action: onPublish)
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .tint(entry.publishStatus == .notPublished ? Color.secondary : Color.accentColor)
                 Button("Edit", systemImage: "pencil", action: onEdit)
                     .labelStyle(.iconOnly)
                     .buttonStyle(.borderless)

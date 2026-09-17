@@ -1,3 +1,4 @@
+import CoreLocation
 import MapKit
 import SwiftData
 
@@ -13,5 +14,12 @@ enum PlaceNamer {
             try? context.save()
             try? await Task.sleep(for: .milliseconds(300))
         }
+    }
+
+    /// The town or city at a coordinate, e.g. "Bangkok": what the website shows at city precision.
+    static func locality(latitude: Double, longitude: Double) async -> String? {
+        guard let request = MKReverseGeocodingRequest(location: CLLocation(latitude: latitude, longitude: longitude)),
+              let item = (try? await request.mapItems)?.first else { return nil }
+        return item.addressRepresentations?.cityName
     }
 }

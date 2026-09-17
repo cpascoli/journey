@@ -10,6 +10,7 @@ struct DayView: View {
     @Query private var visits: [Visit]
     @State private var assets: [PHAsset] = []
     @State private var editorDraft: EntryDraft?
+    @State private var publishedToDelete: Entry?
     @Environment(LocationService.self) private var location
     @Environment(\.modelContext) private var context
 
@@ -51,8 +52,13 @@ struct DayView: View {
                     .buttonStyle(.plain)
                 }
                 .onDelete { offsets in
-                    let current = journalEntries
-                    offsets.forEach { context.delete(current[$0]) }
+                    let chosen = offsets.map { journalEntries[$0] }
+                    // Deleting a published entry here would leave it online.
+                    if let published = chosen.first(where: { $0.publishStatus != .notPublished }) {
+                        publishedToDelete = published
+                    } else {
+                        chosen.forEach(context.delete)
+                    }
                 }
             }
 
@@ -91,6 +97,14 @@ struct DayView: View {
         .sheet(item: $editorDraft) { draft in
             EntryEditorView(draft: draft, journal: journal)
         }
+        .alert(
+            "Unpublish It First",
+            isPresented: Binding(get: { publishedToDelete != nil }, set: { if !$0 { publishedToDelete = nil } })
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("“\(publishedToDelete.map { $0.title.isEmpty ? "Untitled" : $0.title } ?? "")” is on your website. Unpublish it from its journal page in Calendar before deleting it, or it would stay online.")
+        }
         .task(id: day) {
             assets = await PhotoLibrary.requestAccess() ? PhotoLibrary.assets(on: day) : []
             // Days before tracking started (or places it missed) get their places from the photos.
@@ -119,8 +133,16 @@ private struct EntryRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(entry.title.isEmpty ? "Untitled" : entry.title)
-                .font(.headline)
+            HStack(spacing: 6) {
+                Text(entry.title.isEmpty ? "Untitled" : entry.title)
+                    .font(.headline)
+                if entry.publishStatus != .notPublished {
+                    Image(systemName: entry.publishStatus.symbol)
+                        .font(.caption)
+                        .foregroundStyle(.tint)
+                        .accessibilityLabel(entry.publishStatus == .published ? "Published" : "Changed since publishing")
+                }
+            }
             Text([entry.date.formatted(date: .omitted, time: .shortened), entry.placeName]
                 .compactMap { $0 }
                 .joined(separator: " · "))
