@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { MediaGrid } from "@/app/MediaGrid";
+import { currentLanguage } from "@/lib/i18n/current";
 import { currentOwner } from "@/lib/auth/access";
 import { ownerEntry } from "@/lib/owner/reading";
 import { adminClient } from "@/lib/supabase/admin";
@@ -16,6 +17,7 @@ function dayLabel(day: string): string {
 }
 
 export default async function OwnerEntryPage({ params }: Params) {
+  const language = await currentLanguage();
   if (!await currentOwner()) redirect("/owner/login");
   const id = (await params).id;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -32,7 +34,7 @@ export default async function OwnerEntryPage({ params }: Params) {
           {entry.place_name ? ` · ${entry.place_name}` : ""}
         </p>
         <h1>{entry.title || "Untitled entry"}</h1>
-        <MediaGrid entryId={entry.id} media={entry.media} />
+        <MediaGrid entryId={entry.id} language={language} media={entry.media} />
         {entry.text && <div className="entry-text">{entry.text}</div>}
       </article>
     </main>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { MediaGrid } from "@/app/MediaGrid";
+import { currentLanguage } from "@/lib/i18n/current";
 import { currentOwner } from "@/lib/auth/access";
 import { ownerEntries } from "@/lib/owner/reading";
 import { adminClient } from "@/lib/supabase/admin";
@@ -21,6 +22,7 @@ type Invite = {
 };
 
 export default async function OwnerDashboard() {
+  const language = await currentLanguage();
   const owner = await currentOwner();
   if (!owner) redirect("/owner/login");
   const db = adminClient();
@@ -52,7 +54,7 @@ export default async function OwnerDashboard() {
                   </div>
                   <span className={`badge ${entry.visibility}`}>{entry.visibility}</span>
                 </div>
-                <MediaGrid entryId={entry.id} media={entry.media} compact />
+                <MediaGrid entryId={entry.id} language={language} media={entry.media} compact />
                 {entry.text && <div className="entry-text excerpt">{entry.text}</div>}
               </article>
             ))}

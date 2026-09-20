@@ -1,0 +1,116 @@
+import type { Language } from "@/lib/domain/language";
+
+/**
+ * The site's own words. Journal text is not here: entries carry their own
+ * translations from the app (see `entryTextFor`).
+ *
+ * Kept as one record per language rather than a lookup with fallbacks, so a
+ * missing Italian string is a type error rather than an English word
+ * appearing mid-sentence in production.
+ */
+export type Strings = {
+  localeTag: string;
+  siteName: string;
+  sharedWith: (name: string) => string;
+  untitledEntry: string;
+  noStories: string;
+  noOlderStories: string;
+  olderEntries: string;
+  backToNewest: string;
+  allEntries: string;
+  returnToJournal: string;
+  invitationUnavailable: string;
+  invitationUnavailableLede: string;
+  invitationWithdrawn: string;
+  invitationWithdrawnLede: string;
+  entryUnavailable: string;
+  entryUnavailableLede: string;
+  homeEyebrow: string;
+  homeLede: string;
+  homeNote: string;
+  openMedia: string;
+  closeMedia: string;
+  photoAlt: (index: number) => string;
+  videoAlt: (index: number) => string;
+  videoUnsupported: string;
+  switchToEnglish: string;
+  switchToItalian: string;
+};
+
+const en: Strings = {
+  localeTag: "en-GB",
+  siteName: "Journey",
+  sharedWith: (name) => `Shared with ${name}`,
+  untitledEntry: "Untitled entry",
+  noStories: "There are no shared stories yet.",
+  noOlderStories: "There are no older stories.",
+  olderEntries: "Older entries",
+  backToNewest: "Back to the newest",
+  allEntries: "All entries",
+  returnToJournal: "Return to the journal",
+  invitationUnavailable: "Invitation unavailable",
+  invitationUnavailableLede:
+    "This invitation is invalid or is no longer active. Open your invitation link again to start reading.",
+  invitationWithdrawn: "This invitation was withdrawn",
+  invitationWithdrawnLede:
+    "It no longer opens the journal. If you think that's a mistake, ask whoever shared it with you for a new link.",
+  entryUnavailable: "Entry unavailable",
+  entryUnavailableLede: "This entry is not available with the current invitation.",
+  homeEyebrow: "A travel journal",
+  homeLede:
+    "Places, photos and the stories around them — written on the road, and shared only with the people invited to read along.",
+  homeNote: "If you were sent an invitation link, open it to start reading.",
+  openMedia: "Open full screen",
+  closeMedia: "Close",
+  photoAlt: (index) => `Journey photo ${index}`,
+  videoAlt: (index) => `Journey video ${index}`,
+  videoUnsupported: "Your browser cannot play this video.",
+  switchToEnglish: "Read in English",
+  switchToItalian: "Leggi in italiano",
+};
+
+const it: Strings = {
+  localeTag: "it-IT",
+  siteName: "Journey",
+  sharedWith: (name) => `Condiviso con ${name}`,
+  untitledEntry: "Voce senza titolo",
+  noStories: "Non ci sono ancora racconti condivisi.",
+  noOlderStories: "Non ci sono voci precedenti.",
+  olderEntries: "Voci precedenti",
+  backToNewest: "Torna alle più recenti",
+  allEntries: "Tutte le voci",
+  returnToJournal: "Torna al diario",
+  invitationUnavailable: "Invito non disponibile",
+  invitationUnavailableLede:
+    "Questo invito non è valido o non è più attivo. Apri di nuovo il link dell'invito per iniziare a leggere.",
+  invitationWithdrawn: "Questo invito è stato revocato",
+  invitationWithdrawnLede:
+    "Non dà più accesso al diario. Se pensi che sia un errore, chiedi un nuovo link a chi te l'ha condiviso.",
+  entryUnavailable: "Voce non disponibile",
+  entryUnavailableLede: "Questa voce non è disponibile con l'invito attuale.",
+  homeEyebrow: "Un diario di viaggio",
+  homeLede:
+    "Luoghi, foto e le storie che li accompagnano — scritti in viaggio, e condivisi solo con chi è invitato a leggerli.",
+  homeNote: "Se hai ricevuto un link d'invito, aprilo per iniziare a leggere.",
+  openMedia: "Apri a schermo intero",
+  closeMedia: "Chiudi",
+  photoAlt: (index) => `Foto ${index} del diario`,
+  videoAlt: (index) => `Video ${index} del diario`,
+  videoUnsupported: "Il tuo browser non può riprodurre questo video.",
+  switchToEnglish: "Read in English",
+  switchToItalian: "Leggi in italiano",
+};
+
+const BY_LANGUAGE: Record<Language, Strings> = { en, it };
+
+export function stringsFor(language: Language): Strings {
+  return BY_LANGUAGE[language];
+}
+
+/** The day as the writer saw it, formatted in the reader's language. */
+export function formatDay(day: string, language: Language): string {
+  return new Intl.DateTimeFormat(stringsFor(language).localeTag, {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }).format(new Date(`${day}T12:00:00Z`));
+}

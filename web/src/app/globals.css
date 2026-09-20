@@ -150,6 +150,61 @@ input {
   margin-bottom: 3rem;
 }
 
+/* Title on the left, language flags on the right. */
+.site-header,
+.page-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 3rem;
+}
+
+.page-top {
+  margin-bottom: 0.5rem;
+}
+
+.site-header-text > :first-child,
+.site-header-text > h1 {
+  margin-top: 0;
+}
+
+.language-toggle {
+  display: flex;
+  flex: none;
+  gap: 0.5rem;
+  padding-top: 0.15rem;
+}
+
+.language-toggle .flag {
+  display: block;
+  width: 1.65rem;
+  border-radius: 0.2rem;
+  /* The unselected flag recedes rather than disappearing, so it still reads
+     as something you can press. */
+  opacity: 0.45;
+  outline: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  outline-offset: 0;
+  overflow: hidden;
+  transition: opacity 0.15s ease;
+}
+
+.language-toggle .flag svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.language-toggle .flag:hover,
+.language-toggle .flag:focus-visible {
+  opacity: 0.85;
+}
+
+.language-toggle .flag.current {
+  opacity: 1;
+  outline: 2px solid var(--accent);
+}
+
 .entry-card {
   padding: 2.5rem 0;
   border-top: 1px solid color-mix(in srgb, var(--muted) 25%, transparent);
@@ -205,6 +260,49 @@ input {
   margin: 1.5rem 0;
 }
 
+/* Each item is a button so it can be opened full screen, but it must still
+   look like a photo rather than a control. */
+.media-item {
+  position: relative;
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+  font: inherit;
+  color: inherit;
+}
+
+.media-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 0.8rem;
+}
+
+/* A clip in the grid shows its first frame; this marks it as playable. */
+.play-badge {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3rem;
+  height: 3rem;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.55);
+  pointer-events: none;
+}
+
+.play-badge::after {
+  content: "";
+  position: absolute;
+  left: 56%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-style: solid;
+  border-width: 0.5rem 0 0.5rem 0.85rem;
+  border-color: transparent transparent transparent #fff;
+}
+
 .photo-grid img,
 .photo-grid video {
   display: block;
@@ -242,6 +340,85 @@ input {
 
 .reader-paging a:only-child:last-child {
   margin-left: auto;
+}
+
+/* Full screen on a phone, an overlay on anything wider. */
+.media-viewer {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: #000;
+  overflow: hidden;
+}
+
+.media-viewer::backdrop {
+  background: rgb(0 0 0 / 0.92);
+}
+
+.media-viewer img,
+.media-viewer video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Contain, never crop: the point of opening it is to see all of it. */
+  object-fit: contain;
+  background: #000;
+}
+
+.media-viewer button {
+  position: absolute;
+  border: 0;
+  background: rgb(0 0 0 / 0.45);
+  color: #fff;
+  font-family: system-ui, sans-serif;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.viewer-close {
+  top: max(0.75rem, env(safe-area-inset-top));
+  right: 0.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  font-size: 1.75rem;
+}
+
+.viewer-step {
+  top: 50%;
+  width: 2.75rem;
+  height: 4rem;
+  transform: translateY(-50%);
+  border-radius: 0.5rem;
+  font-size: 2rem;
+}
+
+.viewer-step.previous {
+  left: 0.5rem;
+}
+
+.viewer-step.next {
+  right: 0.5rem;
+}
+
+.media-viewer button:hover,
+.media-viewer button:focus-visible {
+  background: rgb(0 0 0 / 0.7);
+}
+
+@media (min-width: 48rem) {
+  .media-viewer {
+    width: min(92vw, 80rem);
+    max-width: 92vw;
+    height: min(92dvh, 60rem);
+    border-radius: 0.75rem;
+    /* Centred, rather than pinned to the top edge as dialogs default to. */
+    margin: auto;
+  }
 }
 
 .media-placeholder {

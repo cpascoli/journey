@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 
 import { INVITE_COOKIE } from "@/lib/auth/session";
-import { readerText } from "@/lib/domain/reader";
+import type { TranslatableEntry } from "@/lib/domain/language";
 import { hashInviteToken } from "@/lib/owner/invites";
 import { adminClient } from "@/lib/supabase/admin";
 
@@ -9,21 +9,21 @@ import { groupMediaRows, MEDIA_COLUMNS, type ReaderMedia } from "./media-rows";
 
 export type { ReaderMedia };
 
-export type ReaderEntry = {
+/**
+ * Entries keep their original and translated text rather than one resolved
+ * string: which one a reader sees depends on the language they chose, and
+ * that is decided at render time by `entryTextFor`.
+ */
+export type ReaderEntry = TranslatableEntry & {
   id: string;
   journal_name: string;
   day: string;
-  title: string;
-  text: string;
   place_name: string | null;
   mediaCount: number;
   media: ReaderMedia[];
 };
 
-type EntryRow = Omit<ReaderEntry, "text" | "mediaCount"> & {
-  narrative: string;
-  notes: string;
-};
+type EntryRow = Omit<ReaderEntry, "mediaCount" | "media">;
 
 /**
  * A revoked invite is told apart from a link that was never valid. Both see
@@ -82,9 +82,8 @@ async function withMedia(rows: EntryRow[]): Promise<ReaderEntry[]> {
       mediaByEntry.set(entryId, items);
     }
   }
-  return rows.map(({ narrative, notes, ...row }) => ({
+  return rows.map((row) => ({
     ...row,
-    text: readerText(narrative, notes),
     mediaCount: mediaByEntry.get(row.id)?.length ?? 0,
     media: mediaByEntry.get(row.id) ?? [],
   }));

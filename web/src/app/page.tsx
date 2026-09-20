@@ -1,13 +1,22 @@
-export default function Home() {
+import { currentLanguage } from "@/lib/i18n/current";
+import { stringsFor } from "@/lib/i18n/strings";
+
+import { LanguageToggle } from "./LanguageToggle";
+
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const language = await currentLanguage();
+  const strings = stringsFor(language);
   return (
     <main className="page">
-      <p className="eyebrow">A travel journal</p>
-      <h1>Journey</h1>
-      <p className="lede">
-        Places, photos and the stories around them — written on the road, and shared only with
-        the people invited to read along.
-      </p>
-      <p className="note">If you were sent an invitation link, open it to start reading.</p>
+      <div className="page-top">
+        <p className="eyebrow">{strings.homeEyebrow}</p>
+        <LanguageToggle language={language} next="/" />
+      </div>
+      <h1>{strings.siteName}</h1>
+      <p className="lede">{strings.homeLede}</p>
+      <p className="note">{strings.homeNote}</p>
     </main>
   );
 }
