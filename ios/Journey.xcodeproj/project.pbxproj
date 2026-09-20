@@ -32,16 +32,16 @@
 
 /* Begin PBXFileReference section */
 		6592B1892C3AEAB775536B44 /* JourneyTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = JourneyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		7F0635BF92C8BE8EE5230B9B /* v2-narrative.store */ = {isa = PBXFileReference; path = "v2-narrative.store"; sourceTree = "<group>"; };
-		B1CE23DA7CB9D85823910309 /* v4-publishing.store */ = {isa = PBXFileReference; path = "v4-publishing.store"; sourceTree = "<group>"; };
+		7F0635BF92C8BE8EE5230B9B /* v2-narrative.store */ = {isa = PBXFileReference; lastKnownFileType = file; path = "v2-narrative.store"; sourceTree = "<group>"; };
+		B1CE23DA7CB9D85823910309 /* v4-publishing.store */ = {isa = PBXFileReference; lastKnownFileType = file; path = "v4-publishing.store"; sourceTree = "<group>"; };
 		B1FA874A98331E89411DE0DC /* Journey.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Journey.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D94116565898DF8BFC4C143A /* JourneyUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = JourneyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		DFB27BF971D066215A4D3D4D /* v3-tags.store */ = {isa = PBXFileReference; path = "v3-tags.store"; sourceTree = "<group>"; };
-		EB52D3C04F7119093DB6E068 /* v1-original.store */ = {isa = PBXFileReference; path = "v1-original.store"; sourceTree = "<group>"; };
+		DFB27BF971D066215A4D3D4D /* v3-tags.store */ = {isa = PBXFileReference; lastKnownFileType = file; path = "v3-tags.store"; sourceTree = "<group>"; };
+		EB52D3C04F7119093DB6E068 /* v1-original.store */ = {isa = PBXFileReference; lastKnownFileType = file; path = "v1-original.store"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		D254BEF9D7E539B36F340B1F /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		D254BEF9D7E539B36F340B1F /* Exceptions for "JourneyTests" folder in "JourneyTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Fixtures/README.md,
@@ -57,31 +57,19 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1C13D53F51D5AC5126011FD2 /* Journey */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
 			path = Journey;
 			sourceTree = "<group>";
 		};
 		2AC82A5CFCE2C4563E4CFBAA /* JourneyTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				D254BEF9D7E539B36F340B1F /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
+				D254BEF9D7E539B36F340B1F /* Exceptions for "JourneyTests" folder in "JourneyTests" target */,
 			);
 			path = JourneyTests;
 			sourceTree = "<group>";
 		};
 		9B5C796A6E8ED20C2B83D487 /* JourneyUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
 			path = JourneyUITests;
 			sourceTree = "<group>";
 		};

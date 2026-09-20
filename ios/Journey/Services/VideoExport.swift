@@ -7,9 +7,13 @@ import Photos
 /// moved to the front.
 ///
 /// The website refuses a video that still has a location, and never strips one
-/// itself — the same rule as `PhotoExport`. It also refuses a file whose `moov`
-/// atom is not at the front, because it verifies the upload by reading only the
-/// head: `shouldOptimizeForNetworkUse` is what puts it there, so it is not an
+/// itself — the same rule as `PhotoExport`. Stripping happens twice over: the
+/// asset is rebuilt from its picture and sound tracks alone, so a timed
+/// metadata track cannot come along, and the export writes no movie metadata.
+///
+/// The website also refuses a file whose `moov` atom is not at the front,
+/// because it verifies the upload by reading only the head:
+/// `shouldOptimizeForNetworkUse` is what puts it there, so it is not an
 /// optimisation here but a requirement.
 enum VideoExport {
     nonisolated struct Video: Sendable {
@@ -43,11 +47,12 @@ enum VideoExport {
         if asset.duration > maxDuration {
             return .failure(.tooLong(seconds: asset.duration))
         }
-        guard let source = await avAsset(for: asset) else { return .failure(.unreadable) }
+        guard let source = await avAsset(for: asset),
+              let picture = await pictureAndSoundOnly(source) else { return .failure(.unreadable) }
 
         // 1280x720 H.264/AAC: the presets that name a size are H.264, which
         // every browser plays. The HEVC presets are not safe to embed.
-        guard let session = AVAssetExportSession(asset: source, presetName: AVAssetExportPreset1280x720) else {
+        guard let session = AVAssetExportSession(asset: picture, presetName: AVAssetExportPreset1280x720) else {
             return .failure(.unreadable)
         }
         // Drops the QuickTime location atoms along with everything else the
@@ -90,6 +95,44 @@ enum VideoExport {
     /// Temporary files are the caller's to clean up: an upload may retry.
     nonisolated static func discard(_ video: Video) {
         try? FileManager.default.removeItem(at: video.fileURL)
+    }
+
+    /// A composition holding only the picture and the sound.
+    ///
+    /// Clearing `metadata` drops the movie-level metadata, but an export also
+    /// copies the source's other tracks, and an iPhone recording can carry a
+    /// timed metadata track holding location samples and declaring
+    /// `com.apple.quicktime.location.ISO6709` in its key table. Rebuilding the
+    /// asset from just the video and audio tracks means such a track cannot
+    /// survive the export, rather than trusting it to be filtered out — the
+    /// website refuses the upload either way, so this has to be certain.
+    private static func pictureAndSoundOnly(_ source: AVAsset) async -> AVAsset? {
+        guard let duration = try? await source.load(.duration),
+              let videoSource = try? await source.loadTracks(withMediaType: .video).first else {
+            return nil
+        }
+        let composition = AVMutableComposition()
+        let range = CMTimeRange(start: .zero, duration: duration)
+        guard let video = composition.addMutableTrack(
+            withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid
+        ) else { return nil }
+        do {
+            try video.insertTimeRange(range, of: videoSource, at: .zero)
+        } catch {
+            return nil
+        }
+        // Carries the rotation, so a portrait clip still exports upright.
+        if let transform = try? await videoSource.load(.preferredTransform) {
+            video.preferredTransform = transform
+        }
+        // Sound is optional: a clip may have none, which must not fail the export.
+        if let audioSource = try? await source.loadTracks(withMediaType: .audio).first,
+           let audio = composition.addMutableTrack(
+               withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid
+           ) {
+            try? audio.insertTimeRange(range, of: audioSource, at: .zero)
+        }
+        return composition
     }
 
     private static func avAsset(for asset: PHAsset) async -> AVAsset? {

@@ -211,26 +211,32 @@ nonisolated struct APIError: LocalizedError {
     let status: Int
     let code: String
     let message: String
+    /// What the website found, when it rejected media for carrying metadata.
+    /// Without this the app reports "strip the metadata" and discards the only
+    /// clue about which atom or segment was actually found.
+    let metadata: [String]
 
-    init(status: Int, code: String, message: String) {
+    init(status: Int, code: String, message: String, metadata: [String] = []) {
         self.status = status
         self.code = code
         self.message = message
+        self.metadata = metadata
     }
 
-    /// Reads the website's `{ "error": { "code", "message" } }` body.
+    /// Reads the website's `{ "error": { "code", "message", "metadata" } }` body.
     init(status: Int, body: Data) {
         let envelope = try? JSONDecoder().decode(ErrorEnvelope.self, from: body)
         self.status = status
         code = envelope?.error.code ?? "HTTP_\(status)"
         message = envelope?.error.message ?? "The website answered with status \(status)."
+        metadata = envelope?.error.metadata ?? []
     }
 
     var errorDescription: String? {
         switch status {
         case 401: "The website didn't accept the key. Check it in Settings → Website."
         case 403: "This key isn't allowed to publish. Use the owner key."
-        default: message
+        default: metadata.isEmpty ? message : "\(message) (\(metadata.joined(separator: ", ")))"
         }
     }
 }
@@ -385,6 +391,8 @@ private nonisolated struct ErrorEnvelope: Decodable {
     nonisolated struct Body: Decodable {
         var code: String
         var message: String
+        /// Present when media was refused for carrying location metadata.
+        var metadata: [String]?
     }
     var error: Body
 }
