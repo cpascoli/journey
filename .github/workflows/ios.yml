@@ -1,0 +1,45 @@
+# Regenerates the project and exercises the app's unit and store-migration tests.
+name: iOS
+
+on:
+  push:
+    branches: [main]
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+  pull_request:
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: App, unit, and migration tests
+    runs-on: macos-26
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.2"
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Regenerate project
+        run: |
+          xcodegen generate
+          git diff --exit-code -- Journey.xcodeproj
+      - name: Build app and run unit/migration tests
+        run: |
+          xcodebuild test \
+            -project Journey.xcodeproj \
+            -scheme Journey \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -only-testing:JourneyTests \
+            CODE_SIGNING_ALLOWED=NO

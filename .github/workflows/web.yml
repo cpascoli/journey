@@ -41,3 +41,73 @@ jobs:
       - run: pnpm test
       # The build is what Netlify runs; green here means a push can't break the deploy.
       - run: pnpm build
+
+  integration:
+    name: Local Supabase integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: web
+    env:
+      SUPABASE_CLI_VERSION: 2.117.0
+      BASE_URL: http://127.0.0.1:3000
+      OWNER_TOKEN: journey-ci-owner-token-000000000000
+      AGENT_TOKEN: journey-ci-agent-token-000000000000
+      JOURNEY_SESSION_SECRET: journey-ci-session-secret-000000000000000000000000
+      JOURNEY_API_KEYS: >-
+        [{"name":"ci-owner","secret":"journey-ci-owner-token-000000000000","role":"owner"},{"name":"ci-agent","secret":"journey-ci-agent-token-000000000000","role":"agent"}]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+      - name: Start and reset local Supabase
+        run: |
+          pnpm dlx "supabase@${SUPABASE_CLI_VERSION}" start
+          pnpm dlx "supabase@${SUPABASE_CLI_VERSION}" db reset
+          eval "$(pnpm dlx "supabase@${SUPABASE_CLI_VERSION}" status -o env)"
+          {
+            echo "SUPABASE_URL=$API_URL"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "LOCAL_DB_URL=$DB_URL"
+          } >> "$GITHUB_ENV"
+      - run: pnpm test:sql
+      - name: Build production server
+        run: pnpm build
+      - name: Start production server
+        run: |
+          pnpm start > "$RUNNER_TEMP/journey-next.log" 2>&1 &
+          echo "NEXT_PID=$!" >> "$GITHUB_ENV"
+      - name: Wait for production server
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --show-error "$BASE_URL/api/v1/owner/openapi.json" > /dev/null; then
+              exit 0
+            fi
+            if ! kill -0 "$NEXT_PID" 2>/dev/null; then
+              cat "$RUNNER_TEMP/journey-next.log"
+              exit 1
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/journey-next.log"
+          exit 1
+      - run: pnpm test:e2e:owner
+      - run: pnpm test:e2e:reader
+      - name: Show server log after failure
+        if: failure()
+        run: cat "$RUNNER_TEMP/journey-next.log"
+      - name: Stop local services
+        if: always()
+        run: |
+          if [ -n "${NEXT_PID:-}" ]; then kill "$NEXT_PID" 2>/dev/null || true; fi
+          pnpm dlx "supabase@${SUPABASE_CLI_VERSION}" stop --no-backup

@@ -24,8 +24,18 @@
   port = 8888
   autoLaunch = false
 
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Referrer-Policy = "no-referrer"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+
 # Set in the Netlify UI for the site, scoped to Builds and Functions, and
 # never as NEXT_PUBLIC_*:
 #   SUPABASE_URL
 #   SUPABASE_SERVICE_ROLE_KEY
 #   JOURNEY_API_KEYS   JSON array of API keys (see web/README.md)
+#   JOURNEY_SESSION_SECRET   independent random value, at least 32 characters
