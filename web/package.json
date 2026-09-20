@@ -15,7 +15,8 @@
     "test:sql": "node scripts/run-sql-tests.mjs",
     "test:e2e:owner": "node scripts/owner-e2e.mjs",
     "test:e2e:reader": "node scripts/reader-e2e.mjs",
-    "cleanup:media": "node scripts/reconcile-media-cleanup.mjs"
+    "cleanup:media": "node scripts/reconcile-media-cleanup.mjs",
+    "check:r2": "node --env-file-if-exists=.env.local scripts/check-r2.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
