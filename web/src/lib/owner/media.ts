@@ -1,11 +1,53 @@
+import { validationError } from "@/lib/api/errors";
+import { R2_PATH_PREFIX } from "@/lib/media/sigv4.mjs";
+
 /** Client-chosen media key: the app sends a hash of the Photos identifier, which contains slashes. */
 export const MEDIA_KEY_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 
 /** Netlify functions accept request bodies up to 6 MB; photos are resized well below this. */
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
-export function mediaStoragePath(entryId: string, key: string): string {
-  return `entries/${entryId}/${key}.jpg`;
+/** Shared by the photo, upload-url and commit routes, which all key on one. */
+export function parseMediaKey(key: string): string {
+  if (!MEDIA_KEY_PATTERN.test(key)) {
+    throw validationError(`key must match ${MEDIA_KEY_PATTERN.source}.`, { field: "key" });
+  }
+  return key;
+}
+
+export type MediaKind = "photo" | "video";
+
+/**
+ * Which object store holds a path. Photos are on Supabase Storage; videos are
+ * on Cloudflare R2, which charges no egress (a minute of 720p is ~19 MB).
+ *
+ * The provider is encoded in the path rather than kept in its own column,
+ * because `storage_cleanup_queue` is keyed on the path alone: a separate
+ * column could disagree with it and aim a delete at the wrong store.
+ */
+export type StorageProvider = "supabase" | "r2";
+
+export function mediaStoragePath(
+  entryId: string,
+  key: string,
+  version?: string,
+  kind: MediaKind = "photo",
+): string {
+  const extension = kind === "video" ? "mp4" : "jpg";
+  return version
+    ? `entries/${entryId}/${key}/${version}.${extension}`
+    : `entries/${entryId}/${key}.${extension}`;
+}
+
+/** The stored form of a path: unprefixed for Supabase, so existing rows keep working. */
+export function qualifiedStoragePath(provider: StorageProvider, path: string): string {
+  return provider === "r2" ? `${R2_PATH_PREFIX}${path}` : path;
+}
+
+export function parseStoragePath(stored: string): { provider: StorageProvider; path: string } {
+  return stored.startsWith(R2_PATH_PREFIX)
+    ? { provider: "r2", path: stored.slice(R2_PATH_PREFIX.length) }
+    : { provider: "supabase", path: stored };
 }
 
 export function isJpeg(bytes: Uint8Array): boolean {

@@ -11,7 +11,11 @@
     "build": "next build",
     "start": "next start --port 3000",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:sql": "node scripts/run-sql-tests.mjs",
+    "test:e2e:owner": "node scripts/owner-e2e.mjs",
+    "test:e2e:reader": "node scripts/reader-e2e.mjs",
+    "cleanup:media": "node scripts/reconcile-media-cleanup.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

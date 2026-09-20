@@ -87,10 +87,41 @@ const entryBody = {
     },
     visibility: { type: "string", enum: ["private", "shared"], description: "Default private." },
     tag_ids: { type: "array", items: { type: "string", format: "uuid" } },
+    client_content_hash: {
+      type: ["string", "null"],
+      pattern: "^[0-9a-f]{64}$",
+      description: "SHA-256 of the canonical entry payload, excluding this field.",
+    },
     media_keys: {
       type: "array",
       items: { type: "string", pattern: "^[A-Za-z0-9_-]{1,128}$" },
       description: "The entry's full ordered media set. Media not listed is deleted.",
+    },
+  },
+};
+
+const entryReadResponse = {
+  description: "Published entry state",
+  content: {
+    "application/json": {
+      schema: {
+        type: "object",
+        properties: {
+          entry: {
+            type: "object",
+            properties: {
+              client_content_hash: { type: ["string", "null"], pattern: "^[0-9a-f]{64}$" },
+              media: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: { asset_key: { type: "string" } },
+                },
+              },
+            },
+          },
+        },
+      },
     },
   },
 };
@@ -139,7 +170,7 @@ export function ownerOpenApiDocument(origin: string) {
           summary: "Read a published entry",
           scope: "journey:entries:read",
           parameters: [uuidPath("id", "The app's entry id.")],
-          responses: { "404": errorResponse },
+          responses: { "200": entryReadResponse, "404": errorResponse },
         }),
         put: op({
           operationId: "putEntry",
@@ -185,6 +216,66 @@ export function ownerOpenApiDocument(origin: string) {
           ],
         }),
       },
+      "/api/v1/owner/entries/{id}/media/{key}/upload-url": {
+        post: op({
+          operationId: "startVideoUpload",
+          summary: "Start a video upload",
+          scope: "journey:entries:write",
+          parameters: [
+            uuidPath("id", "The app's entry id."),
+            { name: "key", in: "path", required: true, schema: { type: "string", pattern: "^[A-Za-z0-9_-]{1,128}$" } },
+          ],
+          responses: {
+            "200": {
+              description: "A short-lived URL to PUT the video to, and the path to commit",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      upload: {
+                        type: "object",
+                        properties: {
+                          url: { type: "string" },
+                          storage_path: { type: "string" },
+                          content_type: { type: "string" },
+                          expires_in: { type: "integer" },
+                          max_bytes: { type: "integer" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            "404": errorResponse,
+          },
+        }),
+      },
+      "/api/v1/owner/entries/{id}/media/{key}/commit": {
+        put: op({
+          operationId: "commitVideo",
+          summary: "Record an uploaded video",
+          scope: "journey:entries:write",
+          parameters: [
+            uuidPath("id", "The app's entry id."),
+            { name: "key", in: "path", required: true, schema: { type: "string", pattern: "^[A-Za-z0-9_-]{1,128}$" } },
+            { name: "taken_at", in: "query", schema: { type: "string", format: "date-time" } },
+            { name: "sort_order", in: "query", schema: { type: "integer" } },
+          ],
+          requestBody: jsonBody({
+            type: "object",
+            required: ["storage_path"],
+            properties: {
+              storage_path: {
+                type: "string",
+                description: "The storage_path returned by upload-url for this key.",
+              },
+            },
+          }),
+          responses: { "404": errorResponse, "415": errorResponse },
+        }),
+      },
       "/api/v1/owner/invites": {
         get: op({ operationId: "listInvites", summary: "List invites", scope: "journey:invites:manage" }),
         post: op({
@@ -209,6 +300,37 @@ export function ownerOpenApiDocument(origin: string) {
           scope: "journey:invites:manage",
           parameters: [uuidPath("id", "Invite id.")],
           responses: { "404": errorResponse },
+        }),
+        patch: op({
+          operationId: "setInviteTags",
+          summary: "Replace which tags an invite may read",
+          scope: "journey:invites:manage",
+          parameters: [uuidPath("id", "Invite id.")],
+          requestBody: jsonBody({
+            type: "object",
+            required: ["tag_ids"],
+            properties: {
+              tag_ids: {
+                type: "array",
+                items: { type: "string", format: "uuid" },
+                description: "The invite's complete tag set. Tags not listed are removed.",
+              },
+            },
+          }),
+          responses: { "404": errorResponse },
+        }),
+      },
+      "/api/v1/owner/invites/{id}/token": {
+        post: op({
+          operationId: "rotateInviteToken",
+          summary: "Replace an invite's link",
+          scope: "journey:invites:manage",
+          parameters: [uuidPath("id", "Invite id.")],
+          responses: {
+            "200": ok("A new link; the old one stops working immediately"),
+            "404": errorResponse,
+            "409": errorResponse,
+          },
         }),
       },
       "/api/v1/owner/proposals": {

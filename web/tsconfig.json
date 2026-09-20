@@ -12,7 +12,7 @@
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "jsx": "preserve",
-    "allowJs": false,
+    "allowJs": true,
     "noEmit": true,
     "incremental": true,
     "plugins": [{ "name": "next" }],

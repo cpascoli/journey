@@ -31,6 +31,7 @@ describe("parseEntryWrite", () => {
     expect(fields.journal_name).toBe("Main");
     expect(fields.narrative_source).toBe("user");
     expect(fields.occurred_at).toBe("2026-09-11T02:00:00.000Z");
+    expect(fields.client_content_hash).toBeNull();
     expect(tagIds).toEqual([]);
     expect(mediaKeys).toBeNull();
   });
@@ -51,11 +52,13 @@ describe("parseEntryWrite", () => {
       tag_ids: [tag, tag.toUpperCase()],
       translation: { language: "it", title: "Tempio dell'Alba", notes: "", narrative: "" },
       media_keys: ["abc", "def", "abc"],
+      client_content_hash: "a".repeat(64),
     });
     expect(write.fields.visibility).toBe("shared");
     expect(write.tagIds).toEqual([tag]);
     expect(write.fields.translation_language).toBe("it");
     expect(write.fields.translated_title).toBe("Tempio dell'Alba");
+    expect(write.fields.client_content_hash).toBe("a".repeat(64));
     expect(write.mediaKeys).toEqual(["abc", "def"]);
   });
 
@@ -69,6 +72,9 @@ describe("parseEntryWrite", () => {
     );
     expect(codeOf(() => parseEntryWrite({ ...base, media_keys: ["a/b"] }))).toBe(
       "VALIDATION_ERROR:media_keys[0]",
+    );
+    expect(codeOf(() => parseEntryWrite({ ...base, client_content_hash: "A".repeat(64) }))).toBe(
+      "VALIDATION_ERROR:client_content_hash",
     );
     expect(codeOf(() => parseEntryWrite({ ...base, translation: { title: "x" } }))).toBe(
       "VALIDATION_ERROR:language",

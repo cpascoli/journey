@@ -34,6 +34,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+a {
+  color: inherit;
+  text-decoration-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  text-underline-offset: 0.18em;
+}
+
 .page {
   max-width: 40rem;
   margin: 0 auto;
@@ -68,4 +74,302 @@ h1 {
   border-left: 2px solid var(--accent);
   font-style: italic;
   color: var(--muted);
+}
+
+.compact {
+  padding-top: 12vh;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.7rem 1.1rem;
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+button.secondary {
+  border: 1px solid color-mix(in srgb, var(--muted) 35%, transparent);
+  background: transparent;
+  color: var(--ink);
+}
+
+button.danger {
+  color: #b34136;
+}
+
+input {
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--muted) 35%, transparent);
+  border-radius: 0.65rem;
+  padding: 0.7rem 0.8rem;
+  background: color-mix(in srgb, var(--paper) 92%, var(--ink));
+  color: var(--ink);
+}
+
+.stack {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 28rem;
+}
+
+.form-error {
+  margin: 0;
+  color: #b34136;
+}
+
+.hint,
+.empty {
+  color: var(--muted);
+}
+
+.reader,
+.dashboard {
+  width: min(100% - 2rem, 68rem);
+  margin: 0 auto;
+  padding: 4rem 0;
+}
+
+.reader {
+  max-width: 46rem;
+}
+
+.reader-header,
+.dashboard-header {
+  margin-bottom: 3rem;
+}
+
+.entry-card {
+  padding: 2.5rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--muted) 25%, transparent);
+}
+
+.entry-card h2,
+.panel h2 {
+  margin: 0.2rem 0 0.75rem;
+  line-height: 1.2;
+}
+
+.entry-card h2 {
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+}
+
+.entry-meta,
+.media-placeholder,
+.row p {
+  margin: 0;
+  color: var(--muted);
+  font-family: system-ui, sans-serif;
+  font-size: 0.85rem;
+}
+
+.entry-text {
+  margin-top: 1rem;
+  white-space: pre-wrap;
+  font-size: 1.1rem;
+}
+
+.entry-text.excerpt {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 3rem;
+  color: var(--muted);
+  font-family: system-ui, sans-serif;
+}
+
+.entry-detail h1 {
+  margin-top: 0.5rem;
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.photo-grid img,
+.photo-grid video {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 42rem;
+  border-radius: 0.8rem;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--muted) 8%, transparent);
+}
+
+.photo-grid.compact-photos {
+  grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
+  margin: 1rem 0;
+}
+
+.photo-grid.compact-photos img {
+  aspect-ratio: 4 / 3;
+}
+
+/* A clip keeps its own shape: cropping a video to the grid would hide its
+   controls, and object-fit does not apply to the control bar. */
+.photo-grid video {
+  object-fit: contain;
+}
+
+.reader-paging {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 2rem 0 1rem;
+  /* One link alone still sits on the correct side. */
+  flex-wrap: wrap;
+}
+
+.reader-paging a:only-child:last-child {
+  margin-left: auto;
+}
+
+.media-placeholder {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--muted) 8%, transparent);
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.dashboard-header h1 {
+  margin-bottom: 0;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.panel {
+  padding: 1.5rem;
+  border: 1px solid color-mix(in srgb, var(--muted) 22%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--paper) 96%, var(--ink));
+}
+
+.rows {
+  display: grid;
+}
+
+.owner-entries {
+  display: grid;
+  gap: 2rem;
+}
+
+.owner-entry {
+  padding-top: 1.25rem;
+  border-top: 1px solid color-mix(in srgb, var(--muted) 18%, transparent);
+}
+
+.owner-entry-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.owner-entry-heading h3,
+.owner-entry-heading p {
+  margin: 0;
+}
+
+.owner-entry-heading p {
+  color: var(--muted);
+  font-family: system-ui, sans-serif;
+  font-size: 0.85rem;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--muted) 18%, transparent);
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.72rem;
+}
+
+.badge.shared {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+.badge.private {
+  background: color-mix(in srgb, var(--muted) 12%, transparent);
+  color: var(--muted);
+}
+
+fieldset {
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.check-grid {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.check-grid label {
+  font-family: system-ui, sans-serif;
+}
+
+.check-grid input {
+  width: auto;
+}
+
+.invite-created {
+  padding-left: 1rem;
+  border-left: 2px solid var(--accent);
+}
+
+@media (max-width: 700px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reader,
+  .dashboard {
+    padding-top: 2rem;
+  }
+
+  .row {
+    align-items: flex-start;
+  }
 }

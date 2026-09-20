@@ -23,10 +23,26 @@ export async function GET(request: Request) {
       .select("id, name, created_at, revoked_at, last_seen_at, invite_tags(tag_id)")
       .order("created_at", { ascending: false });
     if (error) throw dbFailure(error, "list invites");
+    const rows = data as InviteRow[];
+
+    // What each invite can actually read. The all-tags rule is subtle and the
+    // failure mode is over-sharing, so the app shows this before a link is sent.
+    const counts = await Promise.all(
+      rows.map(async (invite) => {
+        if (invite.revoked_at) return 0;
+        const { data: count, error: countError } = await adminClient().rpc(
+          "invite_visible_entry_count",
+          { p_invite_id: invite.id },
+        );
+        return countError ? null : (count as number);
+      }),
+    );
+
     return jsonResponse({
-      invites: (data as InviteRow[]).map(({ invite_tags, ...invite }) => ({
+      invites: rows.map(({ invite_tags, ...invite }, index) => ({
         ...invite,
         tag_ids: invite_tags.map((row) => row.tag_id),
+        visible_entry_count: counts[index],
       })),
     });
   });

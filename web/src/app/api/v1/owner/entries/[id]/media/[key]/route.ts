@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { ApiError, notFound, validationError } from "@/lib/api/errors";
 import { handleApiRequest, jsonResponse, readBytes } from "@/lib/api/http";
 import { parseUuid, queryInteger } from "@/lib/api/validate";
@@ -5,9 +7,10 @@ import {
   findPhotoMetadata,
   isJpeg,
   MAX_PHOTO_BYTES,
-  MEDIA_KEY_PATTERN,
   mediaStoragePath,
+  parseMediaKey,
 } from "@/lib/owner/media";
+import { removeQueuedStorage } from "@/lib/owner/storage-cleanup";
 import { adminClient, MEDIA_BUCKET } from "@/lib/supabase/admin";
 import { dbFailure } from "@/lib/supabase/errors";
 
@@ -17,10 +20,7 @@ type Params = { params: Promise<{ id: string; key: string }> };
 
 async function parseParams(params: Params["params"]) {
   const { id, key } = await params;
-  if (!MEDIA_KEY_PATTERN.test(key)) {
-    throw validationError(`key must match ${MEDIA_KEY_PATTERN.source}.`, { field: "key" });
-  }
-  return { entryId: parseUuid(id, "id"), key };
+  return { entryId: parseUuid(id, "id"), key: parseMediaKey(key) };
 }
 
 export async function PUT(request: Request, { params }: Params) {
@@ -51,35 +51,49 @@ export async function PUT(request: Request, { params }: Params) {
     }
 
     const db = adminClient();
-    const { data: entry, error: entryError } = await db
-      .from("entries")
-      .select("id")
-      .eq("id", entryId)
-      .maybeSingle();
-    if (entryError) throw dbFailure(entryError, "check entry");
-    if (!entry) throw notFound("UNKNOWN_ENTRY", "Save the entry before uploading its photos.");
+    // Every upload gets an immutable path. Queue it before Storage sees it so
+    // a crash at any later point leaves durable orphan-cleanup work.
+    const storagePath = mediaStoragePath(entryId, key, randomUUID());
+    const { data: prepared, error: prepareError } = await db.rpc("prepare_media_upload", {
+      p_entry_id: entryId,
+      p_storage_path: storagePath,
+    });
+    if (prepareError) throw dbFailure(prepareError, "prepare photo upload");
+    if (!prepared) throw notFound("UNKNOWN_ENTRY", "Save the entry before uploading its photos.");
 
-    const storagePath = mediaStoragePath(entryId, key);
     const { error: uploadError } = await db.storage
       .from(MEDIA_BUCKET)
-      .upload(storagePath, bytes, { contentType: "image/jpeg", upsert: true });
+      .upload(storagePath, bytes, { contentType: "image/jpeg", upsert: false });
     if (uploadError) throw dbFailure(uploadError, "upload photo");
 
-    const row = {
-      entry_id: entryId,
-      asset_key: key,
-      kind: "photo",
-      storage_path: storagePath,
-      width,
-      height,
-      taken_at: takenAt,
-      sort_order: sortOrder,
-    };
-    const { error } = await db.from("entry_media").upsert(row, { onConflict: "entry_id,asset_key" });
+    const { data, error } = await db.rpc("commit_media_upload_v2", {
+      p_entry_id: entryId,
+      p_asset_key: key,
+      p_storage_path: storagePath,
+      p_kind: "photo",
+      p_content_type: "image/jpeg",
+      p_width: width,
+      p_height: height,
+      p_duration_seconds: null,
+      p_taken_at: takenAt,
+      p_sort_order: sortOrder,
+    });
     if (error) throw dbFailure(error, "record photo");
+    const previousPath = (data as { replaced_storage_path: string | null }[])[0]
+      ?.replaced_storage_path;
+    await removeQueuedStorage(db, previousPath ? [previousPath] : []);
 
-    const { storage_path: _path, entry_id: _entry, ...media } = row;
-    return jsonResponse({ media: { ...media, bytes: bytes.byteLength } });
+    return jsonResponse({
+      media: {
+        asset_key: key,
+        kind: "photo",
+        width,
+        height,
+        taken_at: takenAt,
+        sort_order: sortOrder,
+        bytes: bytes.byteLength,
+      },
+    });
   });
 }
 
@@ -87,18 +101,13 @@ export async function DELETE(request: Request, { params }: Params) {
   return handleApiRequest(request, "journey:entries:write", async () => {
     const { entryId, key } = await parseParams(params);
     const db = adminClient();
-    const { data, error } = await db
-      .from("entry_media")
-      .delete()
-      .eq("entry_id", entryId)
-      .eq("asset_key", key)
-      .select("storage_path");
+    const { data, error } = await db.rpc("delete_entry_media", {
+      p_entry_id: entryId,
+      p_asset_key: key,
+    });
     if (error) throw dbFailure(error, "delete photo row");
-    const paths = (data as { storage_path: string }[]).map((row) => row.storage_path);
-    if (paths.length > 0) {
-      const { error: storageError } = await db.storage.from(MEDIA_BUCKET).remove(paths);
-      if (storageError) throw dbFailure(storageError, "delete photo file");
-    }
-    return jsonResponse({ deleted: paths.length > 0 });
+    const result = (data as { deleted: boolean; cleanup_paths: string[] }[])[0]!;
+    await removeQueuedStorage(db, result.cleanup_paths);
+    return jsonResponse({ deleted: result.deleted });
   });
 }

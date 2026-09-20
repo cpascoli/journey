@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 
 import { ApiError, permissionDenied, unauthenticated } from "./errors";
 import { isApiRole, isApiScope, ROLE_SCOPES, type ApiScope } from "./scopes";
@@ -74,16 +74,24 @@ export function parseApiKeys(raw: string | undefined): ApiKeyConfig[] {
   return keys;
 }
 
-function secretsEqual(left: string, right: string): boolean {
+export function secretsEqual(left: string, right: string): boolean {
   const leftBuf = Buffer.from(left);
   const rightBuf = Buffer.from(right);
   if (leftBuf.length !== rightBuf.length) return false;
   return timingSafeEqual(leftBuf, rightBuf);
 }
 
+export function apiKeyFingerprint(secret: string): string {
+  return createHash("sha256").update(secret).digest("base64url");
+}
+
 export function authenticate(request: Request, rawKeys = process.env[ENV_NAME]): ApiPrincipal {
   const header = request.headers.get("authorization") ?? "";
   const token = /^Bearer\s+(\S+)/i.exec(header)?.[1] ?? "";
+  return authenticateToken(token, rawKeys);
+}
+
+export function authenticateToken(token: string, rawKeys = process.env[ENV_NAME]): ApiPrincipal {
   if (!token) {
     throw unauthenticated("Missing Authorization: Bearer token.");
   }

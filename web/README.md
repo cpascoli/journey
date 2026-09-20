@@ -10,11 +10,10 @@ Storage), deployed on Netlify. Commands below run from this `web/` folder.
 
 ## Status
 
-In place: the Netlify build, the landing page, the database schema, the rules
-everything else builds on — who can see an entry, how precisely a location is
-shared, and which API key may do what — and the **owner API** the iPhone app
-publishes through. Reading pages for invitees and the GPT's agent API come
-next.
+In place: the Netlify build, database schema, owner publishing API, invite
+reader at `/read`, signed private media, owner dashboard at `/owner`, durable
+media-cleanup queue, and local-database integration CI. The GPT's agent API
+comes next.
 
 ## Sharing rules
 
@@ -66,6 +65,10 @@ pnpm dev                     # http://localhost:3000
 | `pnpm typecheck` | TypeScript, no emit |
 | `pnpm test` | Vitest |
 | `pnpm build` | Production build, the same one Netlify runs |
+| `pnpm test:sql` | Every `supabase/tests/*.sql` file against `LOCAL_DB_URL` (localhost only) |
+| `pnpm test:e2e:owner` | Owner API, login, session, dashboard, detail and media against localhost |
+| `pnpm test:e2e:reader` | Invite, policy-matrix, reader, media and revocation HTTP checks against localhost |
+| `pnpm cleanup:media` | Preview queued Storage cleanup; add `-- --apply` after verifying the destination |
 
 ### Against a local database
 
@@ -74,14 +77,16 @@ Docker, then:
 ```sh
 pnpm dlx supabase start        # local Postgres, API and storage
 pnpm dlx supabase db reset     # apply every migration from scratch
-for f in supabase/tests/*.sql; do
-  docker exec -i supabase_db_journey psql -U postgres -v ON_ERROR_STOP=1 < "$f"
-done
+LOCAL_DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+  pnpm test:sql
 ```
 
 [`scripts/owner-e2e.mjs`](scripts/owner-e2e.mjs) drives every owner endpoint
 against a local server and the local stack, and refuses to run against
-anything else; its header shows the environment it needs.
+anything else. [`scripts/reader-e2e.mjs`](scripts/reader-e2e.mjs) covers the
+browser reader authorization boundary. Their headers and
+[`../docs/operations.md`](../docs/operations.md) show the required environment
+and the complete local-CI sequence.
 
 ## API keys
 
@@ -99,6 +104,11 @@ anything else; its header shows the environment it needs.
 | `owner` | the iPhone app | publish and unpublish entries, manage invites, accept or reject proposals |
 | `agent` | the ChatGPT GPT | read entries, propose story text |
 | `agent-read` | a read-only agent | read entries |
+
+Invitations are managed from the app: each one is created with the tags it may
+read, and those tags can be changed afterwards, its link replaced (which kills
+the old one immediately), or the invitation revoked. The list shows how many
+entries each one actually reads.
 
 The agent can never publish, delete, or decide on its own proposals. Secrets
 must be at least 24 characters; `openssl rand -base64 32` makes a good one.
@@ -121,6 +131,31 @@ Requests send `Authorization: Bearer <secret>`.
 Only the server talks to the database, with the service-role key. Row-level
 security is on with no policies, so the public keys can read nothing.
 
+## Video storage (Cloudflare R2)
+
+Photos live in Supabase Storage. Videos live in [Cloudflare
+R2](https://developers.cloudflare.com/r2/), because they are far larger and R2
+charges nothing for egress: its free tier is 10 GB against Supabase's 1 GB, and
+serving a clip costs no bandwidth. Which store holds an object is recorded in
+`entry_media.storage_path`, where an `r2:` prefix means R2.
+
+1. In the Cloudflare dashboard, **R2 → Create bucket**. Keep it private: the
+   site hands out short-lived signed URLs and never makes the bucket public.
+2. **R2 → Manage API tokens → Create API token**, with *Object Read & Write*
+   scoped to that bucket. Copy the access key id and secret once.
+3. Note the account id from the R2 overview page.
+4. Set `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and
+   `R2_BUCKET` in Netlify, scoped to **Builds and Functions**.
+
+Leave them unset for local development and videos fall back to Supabase
+Storage, which is what the e2e scripts use; never leave them unset in
+production.
+
+A video is uploaded straight from the phone to the store with a presigned URL,
+because a Netlify function's request body caps at 6 MB. The server therefore
+sees the bytes only afterwards, at the commit step, where it refuses anything
+carrying location metadata, not exported for streaming, or over 60 MB.
+
 ## Deploying to Netlify
 
 Build settings live in [`../netlify.toml`](../netlify.toml): it builds from
@@ -138,8 +173,13 @@ One-time setup in the Netlify UI:
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `JOURNEY_API_KEYS`
+   - `JOURNEY_SESSION_SECRET` (an independent random value of at least 32 characters)
+   - `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`
 4. Deploy. After that, every push to `main` that touches `web/` deploys to
    production, so a push is a release.
 
 GitHub Actions ([`web.yml`](../.github/workflows/web.yml)) type-checks, tests
-and builds the site on every push that touches it.
+and builds the site, then starts a pinned local Supabase stack, resets it,
+runs every SQL test, and exercises the owner and reader HTTP surfaces.
+Operational backup, recovery, rotation, rollback and cleanup procedures are in
+[`docs/operations.md`](../docs/operations.md).

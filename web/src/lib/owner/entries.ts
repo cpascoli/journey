@@ -22,6 +22,7 @@ export const VISIBILITIES = ["private", "shared"] as const satisfies readonly Vi
 const MAX_TEXT = 20_000;
 const MAX_TAGS = 50;
 const MAX_MEDIA = 100;
+const CONTENT_HASH = /^[0-9a-f]{64}$/;
 
 /** Columns handed to public.save_entry; location already reduced to its precision. */
 export type EntryFields = {
@@ -41,6 +42,7 @@ export type EntryFields = {
   translated_notes: string;
   translated_narrative: string;
   visibility: Visibility;
+  client_content_hash: string | null;
 };
 
 export type EntryWrite = {
@@ -86,10 +88,22 @@ export function parseEntryWrite(body: unknown): EntryWrite {
       translated_narrative: translation ? stringField(translation, "narrative", { max: MAX_TEXT }) : "",
       // Private unless the app says otherwise: a missing field never shares.
       visibility: enumField(obj, "visibility", VISIBILITIES, "private"),
+      client_content_hash: parseContentHash(obj),
     },
     tagIds: uuidArrayField(obj, "tag_ids", { max: MAX_TAGS }),
     mediaKeys: parseMediaKeys(obj),
   };
+}
+
+function parseContentHash(obj: JsonObject): string | null {
+  const value = obj.client_content_hash;
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string" || !CONTENT_HASH.test(value)) {
+    throw validationError("client_content_hash must be a lowercase SHA-256 hex digest.", {
+      field: "client_content_hash",
+    });
+  }
+  return value;
 }
 
 function parseMediaKeys(obj: JsonObject): string[] | null {

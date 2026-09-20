@@ -13,11 +13,16 @@ pnpm install
 pnpm typecheck
 pnpm test        # Vitest, src/**/*.test.ts
 pnpm build       # what Netlify runs
+pnpm test:sql    # all supabase/tests/*.sql; LOCAL_DB_URL must be localhost
+pnpm test:e2e:owner
+pnpm test:e2e:reader
 ```
 
-Node 22 lives in nvm (`~/.nvm`); a non-interactive shell may still find the
-system Node 18 first, so prefix commands with
-`export PATH="$HOME/.nvm/versions/node/v22.23.2/bin:$PATH"` if `node -v` says 18.
+Node 22 lives in nvm (`~/.nvm`); a non-interactive shell may find an older Node
+first, so if `node -v` isn't 22, prefix commands with
+`export PATH="$HOME/.nvm/versions/node/$(ls ~/.nvm/versions/node | grep '^v22' | sort -V | tail -1)/bin:$PATH"`.
+pnpm is pinned by `packageManager`, so run it as `corepack pnpm …` when the
+system pnpm is a different version.
 
 ## Layout
 
@@ -29,7 +34,7 @@ src/lib/owner/      owner API rules: entry payloads, photo checks, invite tokens
 src/lib/supabase/   the service-role client and database error mapping
 supabase/migrations SQL schema, applied to the hosted project with `supabase db push`
 supabase/tests      SQL tests, run against the local stack (see README)
-scripts/            owner-e2e.mjs — end-to-end run against localhost only
+scripts/            portable SQL runner, localhost HTTP e2e, cleanup operator
 ```
 
 Keep pure logic in `src/lib/domain`, where Vitest reaches it.
@@ -47,20 +52,43 @@ Keep pure logic in `src/lib/domain`, where Vitest reaches it.
   value "for later".
 - The `agent` role must never gain `entries:write`, `invites:manage` or
   `proposals:decide`. `keys.test.ts` asserts this.
+- A media-writing SQL function is versioned rather than edited when its
+  arguments change (`commit_media_upload_v2`): the locking and the
+  cleanup-queue claim in it are what stop a cleanup worker racing an upload
+  into a dangling row, so copy them verbatim into any successor.
 - Migrations are additive and never edited once pushed: add a new file.
   Functions created in `public` are executable by the public roles by
   default: revoke from `public, anon, authenticated` and grant `service_role`.
 - Any write that changes an entry's tags or visibility goes through one SQL
   function (`save_entry`), never separate calls: a half-applied tag change
-  leaves an entry visible to more invites than intended.
+  leaves an entry visible to more invites than intended. An invite's tags obey
+  the same rule through `set_invite_tags`, and the API takes the complete set,
+  never add/remove.
+- Replacing an invite's link (`rotate_invite_token`) overwrites the hash in one
+  statement, so the old link dies as the new one is born, and it refuses a
+  revoked invite — rotating must never quietly restore access.
 - Photos must arrive metadata-free; the server refuses EXIF, XMP and IPTC
   (`findPhotoMetadata`). Don't relax that to "strip on the server".
+- Videos are the same rule with a different file format: `findVideoMetadata`
+  refuses QuickTime and 3GPP location atoms and Apple's `mdta` location key.
+  Because a video is uploaded straight to the object store (a Netlify body
+  caps at 6 MB), the commit step is the only place the server sees the bytes —
+  and it reads only the head, so it also refuses any file whose `moov` is not
+  at the front. Never accept a video the server has not inspected.
+- Photos live in Supabase Storage, videos in Cloudflare R2. The store is
+  encoded in `entry_media.storage_path` (`r2:` prefix) and nowhere else: a
+  separate column could disagree with `storage_cleanup_queue`, which is keyed
+  on the path alone, and send a delete to the wrong store.
+- SigV4 signing lives once, in `src/lib/media/sigv4.mjs`, because the operator
+  cleanup script runs under bare node and must share it. Don't copy it.
 - Error responses never echo database or exception messages: `dbFailure` logs
   and returns a generic error.
 - Never pass a secret as a command-line argument in a script whose errors are
   printed: Node's child_process errors include the full command.
-- `scripts/owner-e2e.mjs`, `supabase db reset` and the SQL tests are for the
-  local stack only. Never point them at the hosted project.
+- The HTTP e2e scripts, `supabase db reset`, and SQL tests are for the local
+  stack only. Never point them at the hosted project. `cleanup:media` is an
+  operator command: it previews by default; verify `SUPABASE_URL` before
+  passing `--apply`.
 - GPT Actions import the agent OpenAPI document. Keep it 3.1.0 with no `oneOf`,
   `anyOf`, `allOf` or `$ref`, every object schema with `properties`, and every
   summary, description and parameter description at most 300 characters —

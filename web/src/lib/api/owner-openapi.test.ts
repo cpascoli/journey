@@ -30,6 +30,12 @@ describe("owner OpenAPI document", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it("documents client content hashes on entry writes and reads", () => {
+    const entryPath = doc.paths["/api/v1/owner/entries/{id}"];
+    expect(JSON.stringify(entryPath.put.requestBody)).toContain("client_content_hash");
+    expect(JSON.stringify(entryPath.get.responses["200"])).toContain("client_content_hash");
+  });
+
   it("describes only routes that exist, with a handler for every documented method", async () => {
     for (const [apiPath, item] of Object.entries(doc.paths)) {
       const file = routeFile(apiPath);

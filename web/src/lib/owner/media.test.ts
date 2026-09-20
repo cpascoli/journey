@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { findPhotoMetadata, isJpeg, MEDIA_KEY_PATTERN, mediaStoragePath } from "./media";
+import {
+  findPhotoMetadata,
+  isJpeg,
+  MEDIA_KEY_PATTERN,
+  mediaStoragePath,
+  parseStoragePath,
+  qualifiedStoragePath,
+} from "./media";
 
 function segment(marker: number, payload: string | number[]): number[] {
   const bytes = typeof payload === "string" ? [...payload].map((c) => c.charCodeAt(0)) : payload;
@@ -59,5 +66,25 @@ describe("media keys and paths", () => {
 
   it("stores each photo under its entry", () => {
     expect(mediaStoragePath("e1", "k1")).toBe("entries/e1/k1.jpg");
+    expect(mediaStoragePath("e1", "k1", "v2")).toBe("entries/e1/k1/v2.jpg");
+  });
+
+  it("gives a video its own extension", () => {
+    expect(mediaStoragePath("e1", "k1", "v2", "video")).toBe("entries/e1/k1/v2.mp4");
+  });
+});
+
+describe("storage providers", () => {
+  it("leaves Supabase paths unprefixed, so rows written before R2 still resolve", () => {
+    const path = mediaStoragePath("e1", "k1", "v2");
+    expect(qualifiedStoragePath("supabase", path)).toBe(path);
+    expect(parseStoragePath(path)).toEqual({ provider: "supabase", path });
+  });
+
+  it("round-trips an R2 path through its prefix", () => {
+    const path = mediaStoragePath("e1", "k1", "v2", "video");
+    const stored = qualifiedStoragePath("r2", path);
+    expect(stored).toBe(`r2:${path}`);
+    expect(parseStoragePath(stored)).toEqual({ provider: "r2", path });
   });
 });

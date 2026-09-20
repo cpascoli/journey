@@ -4,7 +4,8 @@ import { notFound, validationError } from "@/lib/api/errors";
 import { handleApiRequest, jsonResponse, readJson } from "@/lib/api/http";
 import { parseUuid } from "@/lib/api/validate";
 import { parseEntryWrite } from "@/lib/owner/entries";
-import { adminClient, MEDIA_BUCKET } from "@/lib/supabase/admin";
+import { removeQueuedStorage } from "@/lib/owner/storage-cleanup";
+import { adminClient } from "@/lib/supabase/admin";
 import { dbFailure, FOREIGN_KEY_VIOLATION } from "@/lib/supabase/errors";
 
 export const dynamic = "force-dynamic";
@@ -29,39 +30,6 @@ async function mediaOf(db: SupabaseClient, entryId: string): Promise<MediaRow[]>
     .order("sort_order");
   if (error) throw dbFailure(error, "list media");
   return data as MediaRow[];
-}
-
-/**
- * Makes the entry's media match `keys`: removes rows and files that aren't
- * listed, orders the rest, and returns the keys still waiting for an upload.
- */
-async function syncMedia(db: SupabaseClient, entryId: string, keys: string[]): Promise<string[]> {
-  const existing = await mediaOf(db, entryId);
-  const wanted = new Set(keys);
-  const stale = existing.filter((row) => !wanted.has(row.asset_key));
-  if (stale.length > 0) {
-    const { error: storageError } = await db.storage
-      .from(MEDIA_BUCKET)
-      .remove(stale.map((row) => row.storage_path));
-    if (storageError) throw dbFailure(storageError, "remove media files");
-    const { error } = await db
-      .from("entry_media")
-      .delete()
-      .eq("entry_id", entryId)
-      .in("asset_key", stale.map((row) => row.asset_key));
-    if (error) throw dbFailure(error, "remove media rows");
-  }
-  const have = new Set(existing.map((row) => row.asset_key));
-  for (const [index, key] of keys.entries()) {
-    if (!have.has(key)) continue;
-    const { error } = await db
-      .from("entry_media")
-      .update({ sort_order: index })
-      .eq("entry_id", entryId)
-      .eq("asset_key", key);
-    if (error) throw dbFailure(error, "order media");
-  }
-  return keys.filter((key) => !have.has(key));
 }
 
 export async function GET(request: Request, { params }: Params) {
@@ -92,10 +60,11 @@ export async function PUT(request: Request, { params }: Params) {
     const id = parseUuid((await params).id, "id");
     const write = parseEntryWrite(await readJson(request));
     const db = adminClient();
-    const { data, error } = await db.rpc("save_entry", {
+    const { data, error } = await db.rpc("save_entry_with_media", {
       p_id: id,
       p_fields: write.fields,
       p_tag_ids: write.tagIds,
+      p_media_keys: write.mediaKeys,
     });
     if (error) {
       if (error.code === FOREIGN_KEY_VIOLATION) {
@@ -105,13 +74,18 @@ export async function PUT(request: Request, { params }: Params) {
       }
       throw dbFailure(error, "save entry");
     }
-    const saved = (data as { saved_revision: number; was_created: boolean }[])[0]!;
-    const missingMedia = write.mediaKeys ? await syncMedia(db, id, write.mediaKeys) : [];
+    const saved = (data as {
+      saved_revision: number;
+      was_created: boolean;
+      missing_media: string[];
+      cleanup_paths: string[];
+    }[])[0]!;
+    await removeQueuedStorage(db, saved.cleanup_paths);
     return jsonResponse(
       {
         entry: { id, revision: saved.saved_revision, visibility: write.fields.visibility },
         created: saved.was_created,
-        missing_media: missingMedia,
+        missing_media: saved.missing_media,
       },
       saved.was_created ? 201 : 200,
     );
@@ -122,13 +96,10 @@ export async function DELETE(request: Request, { params }: Params) {
   return handleApiRequest(request, "journey:entries:write", async () => {
     const id = parseUuid((await params).id, "id");
     const db = adminClient();
-    const media = await mediaOf(db, id);
-    if (media.length > 0) {
-      const { error } = await db.storage.from(MEDIA_BUCKET).remove(media.map((row) => row.storage_path));
-      if (error) throw dbFailure(error, "remove entry files");
-    }
-    const { data, error } = await db.from("entries").delete().eq("id", id).select("id");
+    const { data, error } = await db.rpc("delete_entry_with_media", { p_id: id });
     if (error) throw dbFailure(error, "delete entry");
-    return jsonResponse({ deleted: data.length > 0 });
+    const result = (data as { deleted: boolean; cleanup_paths: string[] }[])[0]!;
+    await removeQueuedStorage(db, result.cleanup_paths);
+    return jsonResponse({ deleted: result.deleted });
   });
 }

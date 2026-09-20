@@ -1,0 +1,5 @@
+-- Intentionally empty.
+--
+-- Supabase runs this file after migrations during `supabase db reset`.
+-- Integration tests create isolated fixtures and roll them back or clean them
+-- up, so a reset must not install persistent application data.

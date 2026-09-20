@@ -22,7 +22,7 @@ for (const [name, value] of Object.entries(env)) {
     process.exit(2);
   }
 }
-const isLocal = (url) => ["localhost", "127.0.0.1"].includes(new URL(url).hostname);
+const isLocal = (url) => ["localhost", "127.0.0.1", "::1", "[::1]"].includes(new URL(url).hostname);
 if (!isLocal(env.BASE_URL) || !isLocal(env.SUPABASE_URL)) {
   console.error("owner-e2e only runs against localhost: it writes and deletes data.");
   process.exit(2);
@@ -62,6 +62,43 @@ async function api(method, path, { token = env.OWNER_TOKEN, json, bytes, content
   return parse(await fetch(env.BASE_URL + path, { method, headers, body }));
 }
 
+function decodeHtml(value) {
+  return value
+    .replaceAll("&quot;", '"')
+    .replaceAll("&#x27;", "'")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&amp;", "&");
+}
+
+async function ownerLogin(originOverride) {
+  const loginPage = await fetch(env.BASE_URL + "/owner/login", { redirect: "manual" });
+  const html = await loginPage.text();
+  const form = new FormData();
+  for (const input of html.matchAll(/<input\b[^>]*type="hidden"[^>]*>/g)) {
+    const name = input[0].match(/\bname="([^"]*)"/)?.[1];
+    const value = input[0].match(/\bvalue="([^"]*)"/)?.[1] ?? "";
+    if (name) form.append(decodeHtml(name), decodeHtml(value));
+  }
+  form.set("key", env.OWNER_TOKEN);
+  const origin = new URL(env.BASE_URL).origin;
+  const response = await fetch(env.BASE_URL + "/owner/login", {
+    method: "POST",
+    headers: {
+      Origin: originOverride ?? origin.replace("http:", "https:"),
+      "X-Forwarded-Proto": "https",
+    },
+    body: form,
+    redirect: "manual",
+  });
+  return {
+    response,
+    cookie: response.headers.get("set-cookie")?.split(";")[0],
+    setCookie: response.headers.get("set-cookie"),
+    body: await response.text(),
+  };
+}
+
 const key = env.SUPABASE_SERVICE_ROLE_KEY;
 const serviceHeaders = key.startsWith("sb_") ? { apikey: key } : { apikey: key, Authorization: `Bearer ${key}` };
 
@@ -89,7 +126,9 @@ const gpsPhoto = jpeg(segment(0xe0, "JFIF\0"), segment(0xe1, "Exif\0\0MM\0*"));
 const sport = randomUUID();
 const family = randomUUID();
 const entry = randomUUID();
-const files = () => supabase("POST", "/storage/v1/object/list/media", { prefix: `entries/${entry}`, limit: 10 });
+const privateEntry = randomUUID();
+const files = (prefix = `entries/${entry}`) =>
+  supabase("POST", "/storage/v1/object/list/media", { prefix, limit: 10 });
 
 console.log("contract and keys");
 {
@@ -183,8 +222,15 @@ console.log("photos");
   check("a photo for an unknown entry → 404", r.status === 404, r);
 }
 {
-  const r = await files();
-  check("the file is in the private bucket", r.status === 200 && Array.isArray(r.data) && r.data.some((o) => o.name === "k1.jpg"), r);
+  const r = await files(`entries/${entry}/k1`);
+  const names = Array.isArray(r.data) ? r.data.map((object) => object.name) : [];
+  const versionName = names.find((name) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.jpg$/i.test(name)
+  );
+  const listedPath = versionName ? `entries/${entry}/k1/${versionName}` : null;
+  check("the immutable upload is nested under its key in the private bucket",
+    r.status === 200 && listedPath?.startsWith(`entries/${entry}/k1/`) === true,
+    { status: r.status, listedPath, data: r.data });
 }
 {
   const r = await api("PUT", `/api/v1/owner/entries/${entry}`, { json: { ...entryBody, media_keys: ["k1"] } });
@@ -199,6 +245,72 @@ console.log("photos");
     json: { ...entryBody, title: "Temple of Dawn at sunrise", media_keys: ["k1"] },
   });
   check("a new title → revision 2", r.data.entry?.revision === 2, r);
+}
+{
+  const r = await api("PUT", `/api/v1/owner/entries/${privateEntry}`, {
+    json: {
+      ...entryBody,
+      title: "Private dashboard entry",
+      visibility: "private",
+      tag_ids: [],
+      media_keys: [],
+    },
+  });
+  check("publish a private owner-only entry", r.status === 201, r);
+}
+
+console.log("owner dashboard");
+{
+  const anonymous = await fetch(env.BASE_URL + "/owner", { redirect: "manual" });
+  check("anonymous owner request redirects to login", anonymous.status === 307 &&
+    anonymous.headers.get("location")?.endsWith("/owner/login"), anonymous.status);
+}
+{
+  const login = await ownerLogin();
+  check("owner key login creates a hardened secure session",
+    Boolean(login.cookie?.startsWith("__Host-journey-owner=")) &&
+    login.setCookie?.includes("HttpOnly") &&
+    login.setCookie?.includes("Secure") &&
+    login.setCookie?.includes("SameSite=strict") &&
+    login.setCookie?.includes("Path=/"), {
+      status: login.response.status,
+      location: login.response.headers.get("location"),
+      setCookie: login.setCookie,
+      body: login.body.slice(0, 200),
+    });
+  const headers = login.cookie ? { Cookie: login.cookie } : {};
+  const dashboard = await fetch(env.BASE_URL + "/owner", { headers, redirect: "manual" });
+  const dashboardHtml = await dashboard.text();
+  check("session opens dashboard with public and private owner data",
+    dashboard.status === 200 && dashboardHtml.includes("Dashboard") &&
+    dashboardHtml.includes("Temple of Dawn at sunrise") &&
+    dashboardHtml.includes("Private dashboard entry"), dashboard.status);
+  const detail = await fetch(env.BASE_URL + `/owner/entries/${entry}`, { headers, redirect: "manual" });
+  const detailHtml = await detail.text();
+  check("owner session opens entry detail and media",
+    detail.status === 200 && detailHtml.includes("Temple of Dawn at sunrise") &&
+    detailHtml.includes(`/media/${entry}/k1`), detail.status);
+  const ownerMedia = await fetch(env.BASE_URL + `/media/${entry}/k1`, { headers, redirect: "manual" });
+  check("owner media request returns a signed redirect", ownerMedia.status === 302 &&
+    ownerMedia.headers.get("location")?.includes("/storage/v1/object/sign/media/"), ownerMedia.status);
+  const privateDetail = await fetch(env.BASE_URL + `/owner/entries/${privateEntry}`, { headers, redirect: "manual" });
+  check("owner session opens private entry detail", privateDetail.status === 200 &&
+    (await privateDetail.text()).includes("Private dashboard entry"), privateDetail.status);
+}
+{
+  const login = await ownerLogin("https://attacker.example");
+  check("cross-origin owner action is rejected without creating a session",
+    !login.setCookie?.includes("__Host-journey-owner=") &&
+    !login.response.headers.get("location")?.endsWith("/owner"),
+    {
+      status: login.response.status,
+      location: login.response.headers.get("location"),
+      setCookie: login.setCookie,
+    });
+}
+{
+  const r = await api("DELETE", `/api/v1/owner/entries/${privateEntry}`);
+  check("clean up private dashboard entry", r.status === 200 && r.data.deleted === true, r);
 }
 
 console.log("tag deletion");
