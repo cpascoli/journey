@@ -69,6 +69,7 @@ enum DemoData {
         context.insert(entry)
         entry.journal = journal
         entry.date = date
+        LocalDay.capture(entry, timeZone: .current)
         entry.placeName = place
         entry.title = title
         entry.body = body

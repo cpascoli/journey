@@ -1,3 +1,5 @@
+import Photos
+import SwiftData
 import SwiftUI
 
 extension EntryVisibility {
@@ -37,12 +39,13 @@ struct PublishSheet: View {
 
     @State private var visibility: EntryVisibility
     @State private var precision: LocationPrecision
-    @State private var publisher = Publisher()
     @State private var report: Publisher.Report?
     @State private var errorMessage: String?
     @State private var isConfirmingUnpublish = false
     @State private var api = JourneyAPI.configured()
     @Environment(\.dismiss) private var dismiss
+    @Environment(Publisher.self) private var publisher
+    @Query private var metadataCaches: [EntryMetadataCache]
 
     init(entry: Entry) {
         self.entry = entry
@@ -50,10 +53,21 @@ struct PublishSheet: View {
         _precision = State(initialValue: entry.sharedLocationPrecision)
     }
 
-    private var isPublished: Bool { entry.publishStatus != .notPublished }
-    private var media: (photos: Int, videos: Int, unavailable: Int) {
+    private var isPublished: Bool { entry.isPublicationBound }
+    private var cachedLocality: String? {
+        guard let latitude = entry.latitude, let longitude = entry.longitude else { return nil }
+        return metadataCaches.first {
+            $0.entryID == entry.id && $0.matches(latitude: latitude, longitude: longitude)
+        }?.locality
+    }
+    private var media: (photos: Int, videos: Int, longVideos: Int, unavailable: Int) {
         let media = Publisher.media(of: entry)
-        return (media.photos.count, media.videos, media.unavailable)
+        return (
+            media.photos.count,
+            media.videos.count,
+            media.videos.count { $0.duration > VideoExport.maxDuration },
+            media.unavailable
+        )
     }
 
     var body: some View {
@@ -158,7 +172,12 @@ struct PublishSheet: View {
         switch precision {
         case .exact: "Shows the place's name and exact position."
         case .neighborhood: "Shows the place's name, with its position rounded to about 1 km."
-        case .city: "Shows only the city, with its position rounded to about 10 km."
+        case .city:
+            if let cachedLocality {
+                "Shows \(cachedLocality), with its position rounded to about 10 km."
+            } else {
+                "Shows only the city, with its position rounded to about 10 km."
+            }
         case .hidden: "No location is sent to the website."
         }
     }
@@ -166,8 +185,17 @@ struct PublishSheet: View {
     private var mediaFooter: String {
         var parts = ["Photos are uploaded at up to \(PhotoExport.maxPixelSize) pixels, with their location and camera details removed."]
         let media = media
-        if media.videos > 0 {
-            parts.append(media.videos == 1 ? "The video stays on your iPhone: the website doesn't take videos yet." : "The \(media.videos) videos stay on your iPhone: the website doesn't take videos yet.")
+        let sendable = media.videos - media.longVideos
+        if sendable > 0 {
+            parts.append(sendable == 1
+                ? "The video is re-encoded at 720p, with its location removed."
+                : "The \(sendable) videos are re-encoded at 720p, with their locations removed.")
+        }
+        if media.longVideos > 0 {
+            let limit = Int(VideoExport.maxDuration)
+            parts.append(media.longVideos == 1
+                ? "One video is longer than \(limit) seconds and stays on your iPhone."
+                : "\(media.longVideos) videos are longer than \(limit) seconds and stay on your iPhone.")
         }
         if media.unavailable > 0 {
             parts.append("\(media.unavailable) can't be read from your library.")
@@ -180,7 +208,8 @@ struct PublishSheet: View {
         case .idle: nil
         case .tags: "Sending tags…"
         case .entry: "Sending the entry…"
-        case let .photo(index, count): "Uploading photo \(index) of \(count)…"
+        case let .exporting(index, count): "Preparing video \(index) of \(count)…"
+        case let .media(index, count): "Uploading \(index) of \(count)…"
         case .removing: "Removing from the website…"
         }
     }
@@ -190,6 +219,16 @@ struct PublishSheet: View {
             return report.failedPhotos == 1
                 ? "One photo couldn't be prepared. Update again to retry it."
                 : "\(report.failedPhotos) photos couldn't be prepared. Update again to retry them."
+        }
+        if report.failedVideos > 0 {
+            return report.failedVideos == 1
+                ? "One video couldn't be uploaded. Update again to retry it."
+                : "\(report.failedVideos) videos couldn't be uploaded. Update again to retry them."
+        }
+        if report.skippedVideos > 0 {
+            return report.skippedVideos == 1
+                ? "One video was left off: it's too long or too large to upload."
+                : "\(report.skippedVideos) videos were left off: too long or too large to upload."
         }
         return entry.publishStatus == .published ? "Up to date on the website." : nil
     }

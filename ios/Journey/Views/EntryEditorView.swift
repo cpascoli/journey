@@ -9,6 +9,7 @@ struct EntryDraft: Identifiable {
     var title = ""
     var body = ""
     var date = Date.now
+    var timeZoneIdentifier = TimeZone.current.identifier
     var placeName = ""
     var latitude: Double?
     var longitude: Double?
@@ -35,6 +36,7 @@ struct EntryDraft: Identifiable {
         title = entry.title
         body = entry.body
         date = entry.date
+        timeZoneIdentifier = entry.timeZoneIdentifier
         placeName = entry.placeName ?? ""
         latitude = entry.latitude
         longitude = entry.longitude
@@ -52,6 +54,7 @@ struct EntryDraft: Identifiable {
     init(stop: DayTimeline.Stop) {
         visit = stop.visit
         date = stop.visit.arrival
+        timeZoneIdentifier = stop.visit.timeZoneIdentifier
         placeName = stop.visit.placeName ?? ""
         latitude = stop.visit.latitude
         longitude = stop.visit.longitude
@@ -74,6 +77,7 @@ struct EntryEditorView: View {
     @State private var isPickingDayPhotos = false
     @State private var isDrafting = false
     @State private var draftError: String?
+    @State private var saveError: String?
     @State private var translationConfig: TranslationSession.Configuration?
     @State private var translationTarget: String?
     @State private var isTranslating = false
@@ -121,8 +125,12 @@ struct EntryEditorView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        save()
-                        dismiss()
+                        do {
+                            try save()
+                            dismiss()
+                        } catch {
+                            saveError = "Your entry could not be saved. \(error.localizedDescription)"
+                        }
                     }
                 }
                 ToolbarItemGroup(placement: .keyboard) {
@@ -150,6 +158,14 @@ struct EntryEditorView: View {
                         .disabled(focusedField == nil || dictation.isPreparing)
                 }
             }
+            .alert("Couldn’t Save Entry", isPresented: Binding(
+                get: { saveError != nil },
+                set: { if !$0 { saveError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(saveError ?? "")
+            }
             .onChange(of: pickerItems) { _, items in
                 guard !items.isEmpty else { return }
                 let newIDs = items.compactMap(\.itemIdentifier).filter { !draft.assetIDs.contains($0) }
@@ -157,7 +173,11 @@ struct EntryEditorView: View {
                 pickerItems = []
             }
             .sheet(isPresented: $isPickingDayPhotos) {
-                DayPhotoPicker(day: draft.date, selection: $draft.assetIDs)
+                DayPhotoPicker(
+                    day: draft.date,
+                    timeZoneIdentifier: draft.timeZoneIdentifier,
+                    selection: $draft.assetIDs
+                )
             }
             .translationTask(translationConfig) { session in
                 await translate(with: session)
@@ -392,7 +412,7 @@ struct EntryEditorView: View {
         }
     }
 
-    private func save() {
+    private func save() throws {
         let entry: Entry
         if let existing = draft.entry {
             entry = existing
@@ -417,11 +437,33 @@ struct EntryEditorView: View {
         entry.translatedNarrative = draft.translatedNarrative
         entry.tags = draft.tags
         entry.updatedAt = .now
+        let fallbackTimeZone = draft.visit.map {
+            LocalDay.timeZone(identifier: $0.timeZoneIdentifier)
+        } ?? LocalDay.timeZone(identifier: entry.timeZoneIdentifier)
+        LocalDay.capture(entry, timeZone: fallbackTimeZone)
         if let visit = draft.visit, !(entry.visits ?? []).contains(visit) {
             entry.visits = (entry.visits ?? []) + [visit]
         }
         if entry.publishStatus == .published {
             entry.publishStatus = .needsUpdate
+        }
+        try context.save()
+        if let latitude = entry.latitude, let longitude = entry.longitude {
+            let cache = try EntryMetadataCache.findOrCreate(for: entry.id, in: context)
+            Task {
+                await PlaceNamer.refresh(entry: entry, cache: cache) { requestedLatitude, requestedLongitude in
+                    guard requestedLatitude == latitude, requestedLongitude == longitude else { return nil }
+                    return await PlaceNamer.coordinateDetails(
+                        latitude: requestedLatitude,
+                        longitude: requestedLongitude
+                    )
+                }
+                do {
+                    try context.save()
+                } catch {
+                    saveError = "The updated location details could not be saved. \(error.localizedDescription)"
+                }
+            }
         }
     }
 }

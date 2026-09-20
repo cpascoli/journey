@@ -7,6 +7,10 @@ final class Entry {
     var title: String = ""
     var body: String = ""
     var date: Date = Date.now
+    // The civil day and timezone where this entry occurred. These do not change
+    // when the device later travels to another timezone.
+    var localDay: String = ""
+    var timeZoneIdentifier: String = ""
     var createdAt: Date = Date.now
     var updatedAt: Date = Date.now
     var placeName: String?
@@ -28,6 +32,8 @@ final class Entry {
     var publishStatusRaw: String = PublishStatus.notPublished.rawValue
     var remoteID: String?
     var publishedAt: Date?
+    /// The immutable publishing destination while this entry exists online or has queued work.
+    var publishDestinationID: UUID?
     var sharedLocationPrecisionRaw: String = LocationPrecision.city.rawValue
     // Who can read the entry on the website once it's published. Only you until you choose otherwise.
     var visibilityRaw: String = EntryVisibility.onlyMe.rawValue
@@ -56,6 +62,10 @@ final class Entry {
     var narrativeSource: NarrativeSource {
         get { NarrativeSource(rawValue: narrativeSourceRaw) ?? .user }
         set { narrativeSourceRaw = newValue.rawValue }
+    }
+
+    var isPublicationBound: Bool {
+        publishDestinationID != nil || publishStatus != .notPublished
     }
 }
 

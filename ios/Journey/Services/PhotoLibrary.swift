@@ -11,10 +11,34 @@ enum PhotoLibrary {
     static func assets(on day: Date) -> [PHAsset] {
         let start = Calendar.current.startOfDay(for: day)
         guard let end = Calendar.current.date(byAdding: .day, value: 1, to: start) else { return [] }
+        return assets(in: [DateInterval(start: start, end: end)])
+    }
+
+    static func assets(for localDay: String, timeZoneIdentifiers: [String]) -> [PHAsset] {
+        assets(in: LocalDay.intervals(for: localDay, timeZoneIdentifiers: timeZoneIdentifiers))
+    }
+
+    static func assets(in intervals: [DateInterval]) -> [PHAsset] {
+        var byID: [String: PHAsset] = [:]
+        for interval in intervals {
+            for asset in assets(in: interval) {
+                byID[asset.localIdentifier] = asset
+            }
+        }
+        return byID.values.sorted { lhs, rhs in
+            let leftDate = lhs.creationDate ?? .distantPast
+            let rightDate = rhs.creationDate ?? .distantPast
+            return leftDate == rightDate
+                ? lhs.localIdentifier < rhs.localIdentifier
+                : leftDate < rightDate
+        }
+    }
+
+    private static func assets(in interval: DateInterval) -> [PHAsset] {
         let options = PHFetchOptions()
         options.predicate = NSPredicate(
             format: "creationDate >= %@ AND creationDate < %@ AND (mediaType == %d OR mediaType == %d)",
-            start as NSDate, end as NSDate,
+            interval.start as NSDate, interval.end as NSDate,
             PHAssetMediaType.image.rawValue, PHAssetMediaType.video.rawValue
         )
         options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: true)]

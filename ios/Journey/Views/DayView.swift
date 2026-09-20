@@ -17,10 +17,9 @@ struct DayView: View {
     init(day: Binding<Date>, journal: Journal) {
         _day = day
         self.journal = journal
-        let start = day.wrappedValue
-        let end = Calendar.current.date(byAdding: .day, value: 1, to: start) ?? start
-        _entries = Query(filter: #Predicate<Entry> { $0.date >= start && $0.date < end }, sort: \Entry.date)
-        _visits = Query(filter: #Predicate<Visit> { $0.arrival >= start && $0.arrival < end }, sort: \Visit.arrival)
+        let localDay = LocalDay.string(for: day.wrappedValue, timeZone: .current)
+        _entries = Query(filter: #Predicate<Entry> { $0.localDay == localDay }, sort: \Entry.date)
+        _visits = Query(filter: #Predicate<Visit> { $0.localDay == localDay }, sort: \Visit.arrival)
     }
 
     private var isToday: Bool { Calendar.current.isDateInToday(day) }
@@ -54,7 +53,7 @@ struct DayView: View {
                 .onDelete { offsets in
                     let chosen = offsets.map { journalEntries[$0] }
                     // Deleting a published entry here would leave it online.
-                    if let published = chosen.first(where: { $0.publishStatus != .notPublished }) {
+                    if let published = chosen.first(where: \.isPublicationBound) {
                         publishedToDelete = published
                     } else {
                         chosen.forEach(context.delete)
@@ -106,7 +105,11 @@ struct DayView: View {
             Text("“\(publishedToDelete.map { $0.title.isEmpty ? "Untitled" : $0.title } ?? "")” is on your website. Unpublish it from its journal page in Calendar before deleting it, or it would stay online.")
         }
         .task(id: day) {
-            assets = await PhotoLibrary.requestAccess() ? PhotoLibrary.assets(on: day) : []
+            let localDay = LocalDay.string(for: day, timeZone: .current)
+            let timeZones = entries.map(\.timeZoneIdentifier) + visits.map(\.timeZoneIdentifier)
+            assets = await PhotoLibrary.requestAccess()
+                ? PhotoLibrary.assets(for: localDay, timeZoneIdentifiers: timeZones)
+                : []
             // Days before tracking started (or places it missed) get their places from the photos.
             let loose = Set(DayTimeline(visits: visits, assets: assets).looseAssetIDs)
             let created = PhotoPlaces.addVisits(

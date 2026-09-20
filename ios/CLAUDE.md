@@ -14,13 +14,16 @@ Paths and commands below are relative to `ios/`.
 xcodegen generate
 xcodebuild -project Journey.xcodeproj -scheme Journey \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+xcodebuild test -project Journey.xcodeproj -scheme Journey \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -only-testing:JourneyTests CODE_SIGNING_ALLOWED=NO
 ```
 
 - Xcode 26, iOS 26 deployment target, iPhone only, portrait.
 - Schemes: `Journey` (app; UI tests with `DemoWalkthrough` skipped) and
   `Journey-Demo` (used only by `Tools/record-demo.sh`).
-- There are no automated tests yet. `JourneyUITests` holds only the demo
-  walkthrough, which is a recording script, not a test.
+- `JourneyTests` contains unit and store-migration tests. `JourneyUITests`
+  holds only the demo walkthrough, which is a recording script, not a test.
 
 ## Project file
 
@@ -115,10 +118,31 @@ xcodebuild -project Journey.xcodeproj -scheme Journey \
   2048 px with the orientation baked in, then APP1 (EXIF, XMP), APP13 (IPTC)
   and comment segments stripped. `JPEGMetadata` mirrors the website's
   `findPhotoMetadata`; keep them in step, and never rely on the server to strip.
-  Videos aren't published: the website only takes photos.
+- Videos leave only through `VideoExport`: H.264 at 720p, `metadata = []` to
+  drop the QuickTime location atoms, and `shouldOptimizeForNetworkUse = true`.
+  That last flag is a requirement, not a tuning knob — the website verifies an
+  upload by reading only the head of the file and refuses one whose `moov` is
+  not at the front. Caps are 90 seconds and 60 MB (the website's
+  `MAX_VIDEO_BYTES`); `MediaKeyTests` pins them to the contract.
+- Videos are exported *before* `media_keys` is built, not during the upload
+  loop: a clip that turns out too large has to be left out of that list, and by
+  upload time it is already committed. Only videos the website has not
+  confirmed are exported, so re-publishing re-encodes nothing.
+- `MediaKey` is the one key derivation for both kinds (SHA-256 of the Photos
+  identifier). Changing it orphans every published item, so it is pinned by a
+  test. `MediaAvailability.skipped` means "deliberately left off" and must
+  never fall back to a confirmed key, unlike `.unavailable`.
+- A video goes straight from the phone to the object store with a signed URL
+  (`JourneyAPI.putVideo`), because a Netlify request body caps at 6 MB. The
+  owner key is never sent to the store.
 - `PublishSheet` saves visibility and location precision only when *Publish*
   is tapped: a wider audience never takes effect implicitly. Precision
   `hidden` sends no location at all.
+- `InviteManagementView` lists invitations; tapping one opens its detail, where
+  the allowed tags are saved as a whole set and the link can be replaced. Tag
+  edits are not applied until *Save*, so widening access is always deliberate,
+  and the row shows how many entries the invitation actually reads (from the
+  website — the all-tags rule is too easy to misjudge by hand).
 - A published entry, or a journal holding one, can't be deleted in the app:
   unpublish first, or it would stay online. Tag renames reach the website at
   the next publish of an entry that uses the tag.

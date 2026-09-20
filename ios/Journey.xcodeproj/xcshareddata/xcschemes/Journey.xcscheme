@@ -29,6 +29,20 @@
             buildForAnalyzing = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "12FFE9F0CA46BC6323D92356"
+               BuildableName = "JourneyTests.xctest"
+               BlueprintName = "JourneyTests"
+               ReferencedContainer = "container:Journey.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "07FF77CDE30433987BDB6236"
                BuildableName = "JourneyUITests.xctest"
                BlueprintName = "JourneyUITests"
@@ -53,6 +67,17 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "12FFE9F0CA46BC6323D92356"
+               BuildableName = "JourneyTests.xctest"
+               BlueprintName = "JourneyTests"
+               ReferencedContainer = "container:Journey.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
          <TestableReference
             skipped = "NO"
             parallelizable = "NO">

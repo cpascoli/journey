@@ -40,6 +40,7 @@ struct SettingsView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     @Environment(LocationService.self) private var location
+    @Environment(Publisher.self) private var publisher
     @AppStorage("dictationLanguage") private var dictationLanguage = "en"
     @AppStorage("appearance") private var appearance = AppearanceMode.system
 
@@ -71,6 +72,14 @@ struct SettingsView: View {
             tagsSection
 
             WebsiteSection()
+
+            Section("Sharing") {
+                NavigationLink {
+                    InviteManagementView()
+                } label: {
+                    Label("Invitations", systemImage: "person.2")
+                }
+            }
 
             Section("Dictation") {
                 Picker("Language", selection: $dictationLanguage) {
@@ -214,7 +223,7 @@ struct SettingsView: View {
                     if !journal.isDefault {
                         Button("Delete", systemImage: "trash", role: .destructive) {
                             // Its published entries would stay online.
-                            if (journal.entries ?? []).contains(where: { $0.publishStatus != .notPublished }) {
+                            if (journal.entries ?? []).contains(where: \.isPublicationBound) {
                                 journalOnWebsite = journal
                             } else {
                                 deleting = journal
@@ -292,8 +301,14 @@ struct SettingsView: View {
 
     private func renameJournal() {
         let name = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !name.isEmpty {
-            renaming?.name = name
+        if !name.isEmpty, let journal = renaming, journal.name != name {
+            let oldName = journal.name
+            journal.name = name
+            do {
+                try publisher.propagateJournalRename(journal)
+            } catch {
+                journal.name = oldName
+            }
         }
         renaming = nil
     }

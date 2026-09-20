@@ -20,9 +20,9 @@ enum PhotoExport {
     /// The website's `MAX_PHOTO_BYTES`.
     nonisolated static let maxBytes = 5 * 1024 * 1024
 
-    /// The key the website stores a photo under. Photos identifiers contain slashes, so a hash.
+    /// The key the website stores a photo under. Shared with videos; see `MediaKey`.
     nonisolated static func key(for localIdentifier: String) -> String {
-        SHA256.hash(data: Data(localIdentifier.utf8)).map { String(format: "%02x", $0) }.joined()
+        MediaKey.key(for: localIdentifier)
     }
 
     /// The photo as the library shows it (with the user's edits), ready to upload; nil if it can't be read.

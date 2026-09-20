@@ -5,12 +5,17 @@ import SwiftUI
 struct JourneyApp: App {
     private let container: ModelContainer
     @State private var locationService: LocationService
+    @State private var publisher: Publisher
 
     init() {
         let container: ModelContainer
         do {
             let configuration = ModelConfiguration(isStoredInMemoryOnly: Self.isDemo)
-            container = try ModelContainer(for: Journal.self, Entry.self, Visit.self, Tag.self, configurations: configuration)
+            container = try ModelContainer(
+                for: Schema(versionedSchema: JourneySchemaV7.self),
+                migrationPlan: JourneyMigrationPlan.self,
+                configurations: configuration
+            )
         } catch {
             fatalError("Could not open the journal store: \(error)")
         }
@@ -23,6 +28,7 @@ struct JourneyApp: App {
         self.container = container
         // Created at launch so visits delivered while the app was relaunched in the background are captured.
         _locationService = State(initialValue: LocationService(context: container.mainContext))
+        _publisher = State(initialValue: Publisher(context: container.mainContext))
     }
 
     private static var isDemo: Bool {
@@ -37,6 +43,7 @@ struct JourneyApp: App {
         WindowGroup {
             RootView()
                 .environment(locationService)
+                .environment(publisher)
         }
         .modelContainer(container)
     }
@@ -48,6 +55,8 @@ struct RootView: View {
     @State private var day = Calendar.current.startOfDay(for: .now)
     @State private var tab = RootTab.write
     @AppStorage("appearance") private var appearance = AppearanceMode.system
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(Publisher.self) private var publisher
 
     private var journal: Journal? {
         journals.first { $0.id.uuidString == selectedJournalID }
@@ -79,6 +88,16 @@ struct RootView: View {
                 }
             }
             .preferredColorScheme(appearance.colorScheme)
+            .task {
+                await publisher.activate()
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active {
+                    Task { await publisher.activate() }
+                } else {
+                    publisher.deactivate()
+                }
+            }
         }
     }
 }

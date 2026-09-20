@@ -64,17 +64,40 @@ targets:
         TEST_TARGET_NAME: Journey
         GENERATE_INFOPLIST_FILE: YES
 
+  JourneyTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: JourneyTests
+        type: syncedFolder
+        excludes:
+          - Fixtures
+      - path: JourneyTests/Fixtures
+        type: group
+        buildPhase: resources
+        excludes:
+          - README.md
+    dependencies:
+      - target: Journey
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.carlopascoli.journey.tests
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+
 schemes:
   Journey:
     build:
       targets:
         Journey: all
+        JourneyTests: [test]
         JourneyUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
+        - JourneyTests
         # DemoWalkthrough is a recording script, not a test.
         - name: JourneyUITests
           skippedTests:

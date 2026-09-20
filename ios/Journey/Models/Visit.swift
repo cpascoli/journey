@@ -7,6 +7,8 @@ final class Visit {
     var id: UUID = UUID()
     var arrival: Date = Date.distantPast
     var departure: Date?
+    var localDay: String = ""
+    var timeZoneIdentifier: String = ""
     var latitude: Double = 0
     var longitude: Double = 0
     var horizontalAccuracy: Double = 0
@@ -18,6 +20,7 @@ final class Visit {
         self.arrival = arrival
         self.latitude = coordinate.latitude
         self.longitude = coordinate.longitude
+        LocalDay.capture(self, timeZone: .current)
     }
 
     var location: CLLocation {

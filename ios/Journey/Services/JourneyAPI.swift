@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// The website's owner API, which the app publishes through with the owner key.
@@ -10,6 +11,15 @@ struct JourneyAPI {
 
     let baseURL: URL
     let key: String
+    var session: URLSession = .shared
+
+    var destinationURL: String {
+        baseURL.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+    }
+
+    var keyFingerprint: String {
+        SHA256.hash(data: Data(key.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
 
     /// The website and key saved in Settings, or nil when either is missing.
     static func configured() -> JourneyAPI? {
@@ -46,9 +56,54 @@ struct JourneyAPI {
         return try Self.decoder.decode(PutEntryResponse.self, from: data).missingMedia
     }
 
+    /// Reads the server after a timeout or restart instead of guessing whether a write happened.
+    func entryState(id: UUID) async throws -> RemoteEntryState? {
+        do {
+            let data = try await send("GET", "api/v1/owner/entries/\(id.uuidString.lowercased())")
+            return try Self.decoder.decode(GetEntryResponse.self, from: data).entry.state
+        } catch let error as APIError where error.status == 404 {
+            return nil
+        }
+    }
+
     /// Unpublishes the entry and deletes its photos from the website.
     func deleteEntry(id: UUID) async throws {
         _ = try await send("DELETE", "api/v1/owner/entries/\(id.uuidString.lowercased())")
+    }
+
+    func invites() async throws -> [RemoteInvite] {
+        let data = try await send("GET", "api/v1/owner/invites")
+        return try Self.decoder.decode(InviteListResponse.self, from: data).invites
+    }
+
+    /// Creates an invite. Its link contains the one-time token and must not be persisted.
+    func createInvite(name: String, tagIDs: [UUID]) async throws -> CreatedInvite {
+        let body = try Self.encoder.encode(InvitePayload(name: name, tagIds: tagIDs.map { $0.uuidString.lowercased() }))
+        let data = try await send("POST", "api/v1/owner/invites", body: body, contentType: "application/json")
+        return try Self.decoder.decode(CreateInviteResponse.self, from: data).created
+    }
+
+    func revokeInvite(id: UUID) async throws {
+        _ = try await send("DELETE", "api/v1/owner/invites/\(id.uuidString.lowercased())")
+    }
+
+    /// Replaces which tags an invite may read. The whole set is sent, because
+    /// the website applies it in one statement: a partial change would briefly
+    /// widen access.
+    func setInviteTags(id: UUID, tagIDs: [UUID]) async throws -> [UUID] {
+        let body = try Self.encoder.encode(InviteTagsPayload(tagIds: tagIDs.map { $0.uuidString.lowercased() }))
+        let data = try await send(
+            "PATCH", "api/v1/owner/invites/\(id.uuidString.lowercased())",
+            body: body, contentType: "application/json"
+        )
+        return try Self.decoder.decode(SetInviteTagsResponse.self, from: data).invite.tagIds
+    }
+
+    /// Issues a new link and invalidates the old one. Like creation, the link
+    /// comes back once and must not be persisted.
+    func replaceInviteLink(id: UUID) async throws -> URL {
+        let data = try await send("POST", "api/v1/owner/invites/\(id.uuidString.lowercased())/token")
+        return try Self.decoder.decode(InviteLinkResponse.self, from: data).url
     }
 
     func putPhoto(entryID: UUID, key mediaKey: String, _ photo: PhotoExport.Photo, takenAt: Date?, sortOrder: Int) async throws {
@@ -65,6 +120,58 @@ struct JourneyAPI {
             "PUT", "api/v1/owner/entries/\(entryID.uuidString.lowercased())/media/\(mediaKey)",
             query: query, body: photo.jpeg, contentType: "image/jpeg"
         )
+    }
+
+    /// Uploads a video in three steps, because a Netlify function's request
+    /// body caps at 6 MB: ask the website for a signed URL, send the file
+    /// straight to the object store, then have the website verify and record
+    /// it. Only the third step makes the video part of the entry.
+    func putVideo(
+        entryID: UUID,
+        key mediaKey: String,
+        _ video: VideoExport.Video,
+        takenAt: Date?,
+        sortOrder: Int
+    ) async throws {
+        let path = "api/v1/owner/entries/\(entryID.uuidString.lowercased())/media/\(mediaKey)"
+        let started = try Self.decoder.decode(
+            StartUploadResponse.self,
+            from: try await send("POST", "\(path)/upload-url")
+        ).upload
+
+        try await uploadFile(video.fileURL, to: started.url, contentType: started.contentType)
+
+        var query = [URLQueryItem(name: "sort_order", value: String(sortOrder))]
+        if let takenAt {
+            // UTC with a Z: a "+hh:mm" offset would arrive as a space.
+            query.append(URLQueryItem(name: "taken_at", value: takenAt.ISO8601Format()))
+        }
+        let body = try Self.encoder.encode(CommitVideoPayload(storagePath: started.storagePath))
+        _ = try await send(
+            "PUT", "\(path)/commit", query: query, body: body, contentType: "application/json"
+        )
+    }
+
+    /// Streams the file from disk rather than loading it into memory, and goes
+    /// to the object store directly, so it carries no owner key.
+    private func uploadFile(_ fileURL: URL, to urlString: String, contentType: String) async throws {
+        guard let url = URL(string: urlString), url.scheme == "https" else {
+            throw APIError(status: 0, code: "BAD_UPLOAD_URL", message: "The website returned an upload address that isn't valid.")
+        }
+        var request = URLRequest(url: url, timeoutInterval: 300)
+        request.httpMethod = "PUT"
+        // Signed into the URL: anything else is refused by the store.
+        request.setValue(contentType, forHTTPHeaderField: "Content-Type")
+        let (data, response) = try await session.upload(for: request, fromFile: fileURL)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard (200..<300).contains(status) else {
+            throw APIError(
+                status: status,
+                code: "UPLOAD_FAILED",
+                message: "The video couldn't be uploaded (status \(status))."
+            )
+        }
+        _ = data
     }
 
     // MARK: Plumbing
@@ -93,7 +200,7 @@ struct JourneyAPI {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if let contentType { request.setValue(contentType, forHTTPHeaderField: "Content-Type") }
         request.httpBody = body
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else { throw APIError(status: status, body: data) }
         return data
@@ -159,6 +266,40 @@ nonisolated struct EntryPayload: Encodable {
     var tagIds: [String]
     /// The entry's full, ordered photo set: photos not listed are deleted from the website.
     var mediaKeys: [String]
+    /// SHA-256 of the canonical payload with this field omitted.
+    var clientContentHash: String? = nil
+
+    func addingContentHash() throws -> EntryPayload {
+        var payload = self
+        payload.clientContentHash = nil
+        let data = try Self.canonicalEncoder.encode(payload)
+        payload.clientContentHash = SHA256.hash(data: data)
+            .map { String(format: "%02x", $0) }
+            .joined()
+        return payload
+    }
+
+    private static let canonicalEncoder: JSONEncoder = {
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+        encoder.outputFormatting = [.sortedKeys]
+        return encoder
+    }()
+}
+
+private nonisolated struct StartUploadResponse: Decodable {
+    nonisolated struct Upload: Decodable {
+        var url: String
+        var storagePath: String
+        var contentType: String
+        var maxBytes: Int
+    }
+
+    var upload: Upload
+}
+
+private nonisolated struct CommitVideoPayload: Encodable {
+    var storagePath: String
 }
 
 private nonisolated struct TagPayload: Encodable {
@@ -171,8 +312,73 @@ private nonisolated struct TagList: Decodable {
     var tags: [Item]
 }
 
+nonisolated struct RemoteInvite: Decodable, Identifiable, Sendable {
+    let id: UUID
+    let name: String
+    let tagIds: [UUID]
+    let createdAt: String
+    let revokedAt: String?
+    let lastSeenAt: String?
+    /// How many entries this invite can actually read. The all-tags rule is
+    /// easy to get wrong in the direction of sharing too much, so it's shown.
+    let visibleEntryCount: Int?
+}
+
+nonisolated struct CreatedInvite: Decodable, Sendable {
+    let invite: RemoteInvite
+    let url: URL
+}
+
+private nonisolated struct InviteTagsPayload: Encodable {
+    let tagIds: [String]
+}
+
+private nonisolated struct SetInviteTagsResponse: Decodable {
+    nonisolated struct Invite: Decodable { let tagIds: [UUID] }
+    let invite: Invite
+}
+
+private nonisolated struct InviteLinkResponse: Decodable {
+    let url: URL
+}
+
+private nonisolated struct InvitePayload: Encodable {
+    let name: String
+    let tagIds: [String]
+}
+
+private nonisolated struct InviteListResponse: Decodable {
+    let invites: [RemoteInvite]
+}
+
+private nonisolated struct CreateInviteResponse: Decodable {
+    let invite: RemoteInvite
+    let url: URL
+
+    var created: CreatedInvite { CreatedInvite(invite: invite, url: url) }
+}
+
 private nonisolated struct PutEntryResponse: Decodable {
     var missingMedia: [String]
+}
+
+nonisolated struct RemoteEntryState: Equatable, Sendable {
+    var mediaKeys: [String]
+    var clientContentHash: String?
+}
+
+private nonisolated struct GetEntryResponse: Decodable {
+    struct Item: Decodable {
+        struct Media: Decodable { var assetKey: String }
+        var media: [Media]
+        var clientContentHash: String?
+
+        var state: RemoteEntryState {
+            RemoteEntryState(mediaKeys: media.map(\.assetKey), clientContentHash: clientContentHash)
+        }
+    }
+
+    var entry: Item
 }
 
 private nonisolated struct ErrorEnvelope: Decodable {

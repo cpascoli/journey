@@ -29,6 +29,10 @@ enum PhotoPlaces {
             if let visit = visits.first(where: { covers($0, photo.date, photo.location) }) {
                 visit.arrival = min(visit.arrival, photo.date)
                 visit.departure = max(visit.departure ?? visit.arrival, photo.date)
+                LocalDay.capture(
+                    visit,
+                    timeZone: LocalDay.timeZone(identifier: visit.timeZoneIdentifier)
+                )
             } else {
                 let visit = Visit(arrival: photo.date, coordinate: photo.location.coordinate)
                 visit.departure = photo.date

@@ -108,6 +108,8 @@ struct TagEditorView: View {
     @State private var color: TagColor
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Environment(Publisher.self) private var publisher
+    @State private var saveError: String?
 
     init(tag: Tag?, otherNames: [String]) {
         self.tag = tag
@@ -172,21 +174,46 @@ struct TagEditorView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        save()
-                        dismiss()
+                        do {
+                            try save()
+                            dismiss()
+                        } catch {
+                            saveError = "The tag could not be saved. \(error.localizedDescription)"
+                        }
                     }
                     .disabled(trimmed.isEmpty || isDuplicate)
                 }
             }
+            .alert("Couldn’t Save Tag", isPresented: Binding(
+                get: { saveError != nil },
+                set: { if !$0 { saveError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(saveError ?? "")
+            }
         }
     }
 
-    private func save() {
+    private func save() throws {
         if let tag {
+            let changed = tag.name != trimmed || tag.color != color
+            let oldName = tag.name
+            let oldColor = tag.color
             tag.name = trimmed
             tag.color = color
+            if changed {
+                do {
+                    try publisher.propagateTagUpdate(tag)
+                } catch {
+                    tag.name = oldName
+                    tag.color = oldColor
+                    throw error
+                }
+            }
         } else {
             context.insert(Tag(name: trimmed, color: color))
+            try context.save()
         }
     }
 }

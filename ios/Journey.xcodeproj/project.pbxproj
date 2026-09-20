@@ -6,7 +6,21 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		01366695FA4E6D99C48468FD /* v3-tags.store in Resources */ = {isa = PBXBuildFile; fileRef = DFB27BF971D066215A4D3D4D /* v3-tags.store */; };
+		6AEDFB43447E3C301D185250 /* v1-original.store in Resources */ = {isa = PBXBuildFile; fileRef = EB52D3C04F7119093DB6E068 /* v1-original.store */; };
+		82FF647D878C1943F0118A5C /* v4-publishing.store in Resources */ = {isa = PBXBuildFile; fileRef = B1CE23DA7CB9D85823910309 /* v4-publishing.store */; };
+		D7DBDA62C6FCDAAE88CA620E /* v2-narrative.store in Resources */ = {isa = PBXBuildFile; fileRef = 7F0635BF92C8BE8EE5230B9B /* v2-narrative.store */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
+		42AD2BBA463AB3BCCD93FEDB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5ADC3CCCE84D6C10A8869EC3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C33E2849B0F3A6879994F891;
+			remoteInfo = Journey;
+		};
 		D25B3B63DAEF7EED7CAF6A26 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 5ADC3CCCE84D6C10A8869EC3 /* Project object */;
@@ -17,9 +31,28 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		6592B1892C3AEAB775536B44 /* JourneyTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = JourneyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		7F0635BF92C8BE8EE5230B9B /* v2-narrative.store */ = {isa = PBXFileReference; path = "v2-narrative.store"; sourceTree = "<group>"; };
+		B1CE23DA7CB9D85823910309 /* v4-publishing.store */ = {isa = PBXFileReference; path = "v4-publishing.store"; sourceTree = "<group>"; };
 		B1FA874A98331E89411DE0DC /* Journey.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Journey.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D94116565898DF8BFC4C143A /* JourneyUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = JourneyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		DFB27BF971D066215A4D3D4D /* v3-tags.store */ = {isa = PBXFileReference; path = "v3-tags.store"; sourceTree = "<group>"; };
+		EB52D3C04F7119093DB6E068 /* v1-original.store */ = {isa = PBXFileReference; path = "v1-original.store"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D254BEF9D7E539B36F340B1F /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Fixtures/README.md,
+				"Fixtures/v1-original.store",
+				"Fixtures/v2-narrative.store",
+				"Fixtures/v3-tags.store",
+				"Fixtures/v4-publishing.store",
+			);
+			target = 12FFE9F0CA46BC6323D92356 /* JourneyTests */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1C13D53F51D5AC5126011FD2 /* Journey */ = {
@@ -29,6 +62,18 @@
 			explicitFolders = (
 			);
 			path = Journey;
+			sourceTree = "<group>";
+		};
+		2AC82A5CFCE2C4563E4CFBAA /* JourneyTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D254BEF9D7E539B36F340B1F /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = JourneyTests;
 			sourceTree = "<group>";
 		};
 		9B5C796A6E8ED20C2B83D487 /* JourneyUITests */ = {
@@ -47,15 +92,37 @@
 			isa = PBXGroup;
 			children = (
 				1C13D53F51D5AC5126011FD2 /* Journey */,
+				2AC82A5CFCE2C4563E4CFBAA /* JourneyTests */,
+				60FC818B7BC5C402FAE4A111 /* JourneyTests */,
 				9B5C796A6E8ED20C2B83D487 /* JourneyUITests */,
 				C7DF22EEE90DD17C219C3A5D /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		60FC818B7BC5C402FAE4A111 /* JourneyTests */ = {
+			isa = PBXGroup;
+			children = (
+				6ADE48397084AA98206695B3 /* Fixtures */,
+			);
+			path = JourneyTests;
+			sourceTree = "<group>";
+		};
+		6ADE48397084AA98206695B3 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				EB52D3C04F7119093DB6E068 /* v1-original.store */,
+				7F0635BF92C8BE8EE5230B9B /* v2-narrative.store */,
+				DFB27BF971D066215A4D3D4D /* v3-tags.store */,
+				B1CE23DA7CB9D85823910309 /* v4-publishing.store */,
+			);
+			path = Fixtures;
 			sourceTree = "<group>";
 		};
 		C7DF22EEE90DD17C219C3A5D /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				B1FA874A98331E89411DE0DC /* Journey.app */,
+				6592B1892C3AEAB775536B44 /* JourneyTests.xctest */,
 				D94116565898DF8BFC4C143A /* JourneyUITests.xctest */,
 			);
 			name = Products;
@@ -85,6 +152,28 @@
 			productName = JourneyUITests;
 			productReference = D94116565898DF8BFC4C143A /* JourneyUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		12FFE9F0CA46BC6323D92356 /* JourneyTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1E960E132F09094A5118C7C4 /* Build configuration list for PBXNativeTarget "JourneyTests" */;
+			buildPhases = (
+				AABD8F94FD0858A051565B8A /* Sources */,
+				41ECB706F4A4EFFDE86A013C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F5D10F1BBD6231D83F37F326 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				2AC82A5CFCE2C4563E4CFBAA /* JourneyTests */,
+			);
+			name = JourneyTests;
+			packageProductDependencies = (
+			);
+			productName = JourneyTests;
+			productReference = 6592B1892C3AEAB775536B44 /* JourneyTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		C33E2849B0F3A6879994F891 /* Journey */ = {
 			isa = PBXNativeTarget;
@@ -121,6 +210,10 @@
 						ProvisioningStyle = Automatic;
 						TestTargetID = C33E2849B0F3A6879994F891;
 					};
+					12FFE9F0CA46BC6323D92356 = {
+						DevelopmentTeam = 7DZ8FR94Q3;
+						ProvisioningStyle = Automatic;
+					};
 					C33E2849B0F3A6879994F891 = {
 						DevelopmentTeam = 7DZ8FR94Q3;
 						ProvisioningStyle = Automatic;
@@ -143,11 +236,23 @@
 			targets = (
 				C33E2849B0F3A6879994F891 /* Journey */,
 				07FF77CDE30433987BDB6236 /* JourneyUITests */,
+				12FFE9F0CA46BC6323D92356 /* JourneyTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		41ECB706F4A4EFFDE86A013C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6AEDFB43447E3C301D185250 /* v1-original.store in Resources */,
+				D7DBDA62C6FCDAAE88CA620E /* v2-narrative.store in Resources */,
+				01366695FA4E6D99C48468FD /* v3-tags.store in Resources */,
+				82FF647D878C1943F0118A5C /* v4-publishing.store in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		82A92DBF91BBCBB0A462ACA6 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -179,6 +284,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AABD8F94FD0858A051565B8A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -187,9 +299,31 @@
 			target = C33E2849B0F3A6879994F891 /* Journey */;
 			targetProxy = D25B3B63DAEF7EED7CAF6A26 /* PBXContainerItemProxy */;
 		};
+		F5D10F1BBD6231D83F37F326 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C33E2849B0F3A6879994F891 /* Journey */;
+			targetProxy = 42AD2BBA463AB3BCCD93FEDB /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		242183587C69A2412E14430F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.carlopascoli.journey.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Journey.app/Journey";
+			};
+			name = Release;
+		};
 		3732C084301ED685C7ABBCF8 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -309,6 +443,23 @@
 			};
 			name = Debug;
 		};
+		717423B263E25B50D6DA6021 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.carlopascoli.journey.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Journey.app/Journey";
+			};
+			name = Debug;
+		};
 		B9E62FA1D6A9EA1312401A38 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -424,6 +575,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		1E960E132F09094A5118C7C4 /* Build configuration list for PBXNativeTarget "JourneyTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				717423B263E25B50D6DA6021 /* Debug */,
+				242183587C69A2412E14430F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		2EF6616C76000815D46750EA /* Build configuration list for PBXNativeTarget "JourneyUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

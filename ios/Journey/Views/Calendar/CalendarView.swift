@@ -45,7 +45,7 @@ struct CalendarView: View {
             entry.journal?.id == journal.id
                 && (activeTag == nil || (entry.tags ?? []).contains { $0.id == activeTag?.id })
         }) {
-            calendar.startOfDay(for: $0.date)
+            $0.calendarDay
         }
         content(entriesByDay)
             .safeAreaInset(edge: .top, spacing: 0) {

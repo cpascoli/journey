@@ -5,6 +5,7 @@ import SwiftUI
 /// filter by date, but the app has full library access, so it lists the day itself.
 struct DayPhotoPicker: View {
     let day: Date
+    let timeZoneIdentifier: String
     @Binding var selection: [String]
 
     @State private var assets: [PHAsset] = []
@@ -41,7 +42,13 @@ struct DayPhotoPicker: View {
                 }
             }
             .task {
-                assets = await PhotoLibrary.requestAccess() ? PhotoLibrary.assets(on: day) : []
+                let localDay = LocalDay.string(
+                    for: day,
+                    timeZone: LocalDay.timeZone(identifier: timeZoneIdentifier)
+                )
+                assets = await PhotoLibrary.requestAccess()
+                    ? PhotoLibrary.assets(for: localDay, timeZoneIdentifiers: [timeZoneIdentifier])
+                    : []
                 isLoaded = true
             }
         }

@@ -43,8 +43,10 @@ one journal or several. Commands below run from this `ios/` folder.
   choose who can read it (only you, or the people you invite, limited by its
   tags) and how precisely its location shows — city by default. Photos are
   uploaded at up to 2048 pixels with their location and camera details
-  removed; videos stay on the phone for now. Nothing is published until you
-  tap *Publish*, and a published entry can't be deleted until it's unpublished.
+  removed. Videos up to 90 seconds are re-encoded at 720p with their location
+  removed and uploaded too; longer ones stay on the phone. Nothing is published
+  until you tap *Publish*, and a published entry can't be deleted until it's
+  unpublished.
 
 ### On the way
 
@@ -125,11 +127,13 @@ draft and it becomes yours.
 
 ### Data model
 
-SwiftData, with three models: `Journal`, `Entry` and `Visit`. Every property
-has a default and every relationship is optional, which is what CloudKit
-requires — iCloud sync can be switched on later without a migration. For
-publishing, entries carry a stable ID (also the website's), the remote ID,
-publish state, who can read it, and how precisely to share the location.
+SwiftData stores journals, entries, visits, tags, publishing destinations and
+outbox operations, plus cached publishing metadata. The versioned schema and
+migration plan preserve stores from earlier releases. Every stored property
+has a default and every relationship is optional, which keeps the model
+CloudKit-compatible. For publishing, entries carry a stable ID (also the
+website's), destination binding, publish state, audience, and location
+precision.
 
 ## Running it on your iPhone
 
@@ -185,7 +189,16 @@ cd ios
 xcodegen generate
 xcodebuild -project Journey.xcodeproj -scheme Journey \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+xcodebuild test -project Journey.xcodeproj -scheme Journey \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -only-testing:JourneyTests CODE_SIGNING_ALLOWED=NO
 ```
+
+`JourneyTests` covers stable local-day behavior, the durable publishing
+outbox, and migration from each shipped SwiftData schema. The same generation
+and test command runs in [iOS CI](../.github/workflows/ios.yml) on Xcode 26.
+Website backup, key rotation, destination recovery and deployment procedures
+are in the [operations runbook](../docs/operations.md).
 
 ## Demo mode
 
@@ -242,5 +255,5 @@ swift Tools/make-icon.swift
 ## Caveats
 
 This is a personal project, not something to ship. It holds a detailed record
-of where you've been: it stays on the device until publishing exists, and
-publishing will default to city-level locations.
+of where you've been. Data stays on the device unless you explicitly tap
+*Publish*; published locations default to city level.
