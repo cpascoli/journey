@@ -24,14 +24,9 @@
   port = 8888
   autoLaunch = false
 
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Referrer-Policy = "no-referrer"
-    X-Content-Type-Options = "nosniff"
-    X-Frame-Options = "DENY"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+# Security headers live in web/next.config.ts, not here: a [[headers]] block
+# does not reach responses served by the Next.js runtime, which is every route
+# on this site, so headers set here are silently absent in production.
 
 # Set in the Netlify UI for the site, scoped to Builds and Functions, and
 # never as NEXT_PUBLIC_*:
