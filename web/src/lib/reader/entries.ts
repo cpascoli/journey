@@ -1,7 +1,14 @@
 import { cookies } from "next/headers";
 
 import { INVITE_COOKIE } from "@/lib/auth/session";
-import type { TranslatableEntry } from "@/lib/domain/language";
+import {
+  filterEntries,
+  tagFacets,
+  type EntryTag,
+  type Filters,
+  type TagFacet,
+} from "@/lib/domain/filters";
+import { entryTextFor, type Language, type TranslatableEntry } from "@/lib/domain/language";
 import { hashInviteToken } from "@/lib/owner/invites";
 import { adminClient } from "@/lib/supabase/admin";
 
@@ -21,9 +28,11 @@ export type ReaderEntry = TranslatableEntry & {
   place_name: string | null;
   mediaCount: number;
   media: ReaderMedia[];
+  /** Only the tags of entries this invite may read; see `tagFacets`. */
+  tags: EntryTag[];
 };
 
-type EntryRow = Omit<ReaderEntry, "mediaCount" | "media">;
+type EntryRow = Omit<ReaderEntry, "mediaCount" | "media" | "tags"> & { tags: EntryTag[] };
 
 /**
  * A revoked invite is told apart from a link that was never valid. Both see
@@ -42,6 +51,11 @@ export type ReaderPage = {
   entries: ReaderEntry[];
   /** Opaque cursor to pass as `before` for the next page, or null at the end. */
   nextCursor: string | null;
+  /** Tags worth offering as filters, drawn only from what this invite sees. */
+  facets: TagFacet[];
+  /** How many entries the filters matched, and how many there are in total. */
+  matching: number;
+  total: number;
 };
 
 export async function currentInvite(): Promise<ReaderAccess> {
@@ -59,14 +73,37 @@ export async function currentInvite(): Promise<ReaderAccess> {
 }
 
 async function visibleEntries(inviteId: string): Promise<EntryRow[]> {
-  const { data, error } = await adminClient().rpc("entries_visible_to_invite", {
+  const db = adminClient();
+  const { data, error } = await db.rpc("entries_visible_to_invite", {
     p_invite_id: inviteId,
   });
   if (error) throw new Error("Could not load shared entries.");
   // Newest first, with the id breaking ties so paging is stable within a day.
-  return (data as EntryRow[]).sort(
+  const rows = (data as EntryRow[]).sort(
     (left, right) => right.day.localeCompare(left.day) || right.id.localeCompare(left.id),
   );
+  if (rows.length === 0) return rows;
+
+  // Tags of entries this invite can already read. Reading them per entry
+  // rather than listing the tags table is what stops a tag the reader has no
+  // access to appearing in the filters.
+  const { data: tagRows, error: tagError } = await db
+    .from("entry_tags")
+    .select("entry_id, tags(id, name)")
+    .in("entry_id", rows.map((row) => row.id));
+  if (tagError) throw new Error("Could not load shared entries.");
+
+  const byEntry = new Map<string, EntryTag[]>();
+  for (const row of (tagRows ?? []) as { entry_id: string; tags: EntryTag | EntryTag[] | null }[]) {
+    if (!row.tags) continue;
+    const tag = Array.isArray(row.tags) ? row.tags[0] : row.tags;
+    if (!tag) continue;
+    byEntry.set(row.entry_id, [...(byEntry.get(row.entry_id) ?? []), tag]);
+  }
+  for (const row of rows) {
+    row.tags = (byEntry.get(row.id) ?? []).sort((left, right) => left.name.localeCompare(right.name));
+  }
+  return rows;
 }
 
 async function withMedia(rows: EntryRow[]): Promise<ReaderEntry[]> {
@@ -115,22 +152,44 @@ export function pageStart(rows: { id: string; day: string }[], cursor?: string):
 }
 
 export async function entriesForCurrentInvite(
-  options: { before?: string } = {},
+  options: { before?: string; filters?: Filters; language?: Language } = {},
 ): Promise<ReaderPage | NoReaderAccess> {
   const access = await currentInvite();
   if (access.status !== "ok") return access;
   await noteVisit(access.inviteId);
 
   const all = await visibleEntries(access.inviteId);
-  const from = pageStart(all, options.before);
-  const page = all.slice(from, from + READER_PAGE_SIZE);
+  // Facets come from everything the invite can see, not from the filtered
+  // set, so choosing one tag does not make the others disappear.
+  const facets = tagFacets(all);
+
+  const filters = options.filters;
+  const language = options.language ?? "en";
+  const matched = filters
+    ? filterEntries(
+        all,
+        filters,
+        // Search what the reader actually sees, in their language.
+        (entry) => {
+          const { title, text } = entryTextFor(language, entry);
+          return [title, text, entry.place_name ?? "", ...entry.tags.map((tag) => tag.name)];
+        },
+        new Date(),
+      )
+    : all;
+
+  const from = pageStart(matched, options.before);
+  const page = matched.slice(from, from + READER_PAGE_SIZE);
   const last = page[page.length - 1];
-  const remaining = all.length > from + page.length;
+  const remaining = matched.length > from + page.length;
 
   return {
     inviteName: access.inviteName,
     entries: await withMedia(page),
     nextCursor: remaining && last ? `${last.day}_${last.id}` : null,
+    facets,
+    matching: matched.length,
+    total: all.length,
   };
 }
 

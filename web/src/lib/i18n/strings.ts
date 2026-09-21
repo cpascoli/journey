@@ -35,6 +35,18 @@ export type Strings = {
   videoUnsupported: string;
   switchToEnglish: string;
   switchToItalian: string;
+  filters: string;
+  search: string;
+  searchPlaceholder: string;
+  searchAction: string;
+  allTags: string;
+  when: string;
+  lastWeek: string;
+  lastMonth: string;
+  allTime: string;
+  clearFilters: string;
+  showingCount: (matching: number, total: number) => string;
+  noMatches: string;
 };
 
 const en: Strings = {
@@ -67,6 +79,19 @@ const en: Strings = {
   videoUnsupported: "Your browser cannot play this video.",
   switchToEnglish: "Read in English",
   switchToItalian: "Leggi in italiano",
+  filters: "Filter",
+  search: "Search",
+  searchPlaceholder: "Words, a place, a tag…",
+  searchAction: "Search",
+  allTags: "Everything",
+  when: "When",
+  lastWeek: "Last week",
+  lastMonth: "Last month",
+  allTime: "All time",
+  clearFilters: "Clear filters",
+  showingCount: (matching, total) =>
+    matching === total ? `${total} entries` : `${matching} of ${total} entries`,
+  noMatches: "No entries match these filters.",
 };
 
 const it: Strings = {
@@ -99,6 +124,21 @@ const it: Strings = {
   videoUnsupported: "Il tuo browser non può riprodurre questo video.",
   switchToEnglish: "Read in English",
   switchToItalian: "Leggi in italiano",
+  filters: "Filtra",
+  search: "Cerca",
+  searchPlaceholder: "Parole, un luogo, un tag…",
+  searchAction: "Cerca",
+  allTags: "Tutto",
+  when: "Quando",
+  lastWeek: "Ultima settimana",
+  lastMonth: "Ultimo mese",
+  allTime: "Sempre",
+  clearFilters: "Azzera i filtri",
+  showingCount: (matching, total) =>
+    matching === total
+      ? `${total} voci`
+      : `${matching} di ${total} voci`,
+  noMatches: "Nessuna voce corrisponde a questi filtri.",
 };
 
 const BY_LANGUAGE: Record<Language, Strings> = { en, it };
