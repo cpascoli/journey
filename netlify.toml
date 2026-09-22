@@ -46,3 +46,4 @@
 #   SUPABASE_SERVICE_ROLE_KEY
 #   JOURNEY_API_KEYS   JSON array of API keys (see web/README.md)
 #   JOURNEY_SESSION_SECRET   independent random value, at least 32 characters
+#   JOURNEY_PUBLIC_ORIGIN    https://ashone.me — the host invite links use

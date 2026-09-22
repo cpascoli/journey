@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { authenticateToken, requireScope } from "@/lib/api/keys";
+import { publicOrigin } from "@/lib/api/origin";
 import { currentOwner, requireHttps, requireSameOrigin } from "@/lib/auth/access";
 import { createOwnerSession, OWNER_COOKIE, secureCookieOptions } from "@/lib/auth/session";
 import { hashInviteToken, inviteUrl, newInviteToken } from "@/lib/owner/invites";
@@ -62,9 +63,8 @@ export async function createInvite(
     const requestHeaders = await headers();
     const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
     if (!host) return { error: "The invitation was created, but its link could not be displayed." };
-    const protocol = requestHeaders.get("x-forwarded-proto") ?? "https";
     revalidatePath("/owner");
-    return { url: inviteUrl(`${protocol}://${host}`, token) };
+    return { url: inviteUrl(publicOrigin(requestHeaders, `https://${host}`), token) };
   } catch {
     return { error: "The invitation could not be created." };
   }

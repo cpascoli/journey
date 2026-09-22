@@ -53,6 +53,10 @@ never by loading everything published and filtering.
 - The all-tags visibility rule exists twice — `isVisibleToInvite` and
   `public.entries_visible_to_invite` — and they must stay equivalent. Change
   both together, with tests.
+- Build every link the site hands out with `publicOrigin`, never
+  `new URL(request.url).origin`: behind Netlify's runtime that carried the
+  branch-deploy hostname (`main--<site>.netlify.app`) and invite links were
+  minted on it. `JOURNEY_PUBLIC_ORIGIN` pins the answer.
 - Reduce locations with `shareLocation` before storing; never store the precise
   value "for later".
 - The `agent` role must never gain `entries:write`, `invites:manage` or

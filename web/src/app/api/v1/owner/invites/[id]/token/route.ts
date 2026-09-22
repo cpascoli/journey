@@ -1,5 +1,6 @@
 import { conflict, notFound } from "@/lib/api/errors";
 import { handleApiRequest, jsonResponse } from "@/lib/api/http";
+import { publicOrigin } from "@/lib/api/origin";
 import { parseUuid } from "@/lib/api/validate";
 import { hashInviteToken, inviteUrl, newInviteToken } from "@/lib/owner/invites";
 import { adminClient } from "@/lib/supabase/admin";
@@ -33,7 +34,7 @@ export async function POST(request: Request, { params }: Params) {
       return jsonResponse({
         // Returned once. Only its hash is stored, so it can't be shown again.
         token,
-        url: inviteUrl(new URL(request.url).origin, token),
+        url: inviteUrl(publicOrigin(request.headers, request.url), token),
       });
     }
 
