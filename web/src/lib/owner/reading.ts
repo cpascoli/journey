@@ -90,3 +90,25 @@ export async function ownerEntry(db: SupabaseClient, id: string): Promise<OwnerE
   const [entry] = await withMedia(db, [data as OwnerEntryRow]);
   return entry ?? null;
 }
+
+/** The raw text columns, for the dashboard's editor. */
+export async function editableEntryText(db: SupabaseClient, id: string) {
+  const { data, error } = await db
+    .from("entries")
+    .select(
+      "id, title, notes, narrative, translation_language, translated_title, translated_notes, translated_narrative",
+    )
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error("Could not load the entry's text.");
+  return data as {
+    id: string;
+    title: string;
+    notes: string;
+    narrative: string;
+    translation_language: string;
+    translated_title: string;
+    translated_notes: string;
+    translated_narrative: string;
+  } | null;
+}

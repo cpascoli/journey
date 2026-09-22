@@ -64,6 +64,12 @@ never by loading everything published and filtering.
 - Migrations are additive and never edited once pushed: add a new file.
   Functions created in `public` are executable by the public roles by
   default: revoke from `public, anon, authenticated` and grant `service_role`.
+- The dashboard may correct an entry's text through `save_entry_text`, which
+  touches only the text columns. Tags and visibility decide who may read an
+  entry, so a text edit must not be able to reach them; keep that function
+  narrow. It bumps `revision` (staling proposals) and clears
+  `client_content_hash`, because the website no longer holds what the app
+  sent. The app stays the source of truth and overwrites on its next publish.
 - Any write that changes an entry's tags or visibility goes through one SQL
   function (`save_entry`), never separate calls: a half-applied tag change
   leaves an entry visible to more invites than intended. An invite's tags obey

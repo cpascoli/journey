@@ -705,6 +705,86 @@ input {
   color: var(--muted);
 }
 
+/* The two languages side by side on a wide screen, stacked on a phone. */
+.edit-columns {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 52rem) {
+  .edit-columns {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.edit-text fieldset {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--ink) 15%, transparent);
+  border-radius: 0.6rem;
+}
+
+.edit-text legend {
+  padding: 0 0.4rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.edit-text label {
+  display: block;
+  margin: 0.9rem 0 0.3rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.edit-text input,
+.edit-text textarea,
+.edit-text select {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent);
+  border-radius: 0.45rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.edit-text textarea {
+  resize: vertical;
+}
+
+.edit-text > button {
+  margin-top: 1rem;
+  padding: 0.55rem 1.2rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: var(--paper);
+  font-family: system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.edit-text > button[disabled] {
+  opacity: 0.6;
+}
+
+.panel-note.warning {
+  color: var(--accent);
+}
+
+.form-saved {
+  margin: 0.75rem 0 0;
+  font-family: system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .media-placeholder {
   margin-top: 1.5rem;
   padding: 1rem;

@@ -281,15 +281,27 @@ console.log("owner dashboard");
   const headers = login.cookie ? { Cookie: login.cookie } : {};
   const dashboard = await fetch(env.BASE_URL + "/owner", { headers, redirect: "manual" });
   const dashboardHtml = await dashboard.text();
-  check("session opens dashboard with public and private owner data",
+  // The dashboard lists the days that have entries and loads no media, so the
+  // entries themselves live on the day page.
+  check("session opens the dashboard, listing the days with entries",
     dashboard.status === 200 && dashboardHtml.includes("Dashboard") &&
-    dashboardHtml.includes("Temple of Dawn at sunrise") &&
-    dashboardHtml.includes("Private dashboard entry"), dashboard.status);
+    dashboardHtml.includes("/owner/day/2026-09-11"), dashboard.status);
+  check("the dashboard requests no media of its own",
+    !dashboardHtml.includes("/media/"),
+    (dashboardHtml.match(/\/media\/[^"]*/g) || []).slice(0, 2));
+  const dayPage = await fetch(env.BASE_URL + "/owner/day/2026-09-11", { headers, redirect: "manual" });
+  const dayHtml = await dayPage.text();
+  check("a day page shows that day's public and private entries",
+    dayPage.status === 200 && dayHtml.includes("Temple of Dawn at sunrise") &&
+    dayHtml.includes("Private dashboard entry"), dayPage.status);
   const detail = await fetch(env.BASE_URL + `/owner/entries/${entry}`, { headers, redirect: "manual" });
   const detailHtml = await detail.text();
   check("owner session opens entry detail and media",
     detail.status === 200 && detailHtml.includes("Temple of Dawn at sunrise") &&
     detailHtml.includes(`/media/${entry}/k1`), detail.status);
+  check("entry detail offers the text editor, prefilled",
+    detailHtml.includes('class="edit-text"') &&
+    detailHtml.includes("Climbed the central prang before the crowds."), detail.status);
   const ownerMedia = await fetch(env.BASE_URL + `/media/${entry}/k1`, { headers, redirect: "manual" });
   check("owner media request returns a signed redirect", ownerMedia.status === 302 &&
     ownerMedia.headers.get("location")?.includes("/storage/v1/object/sign/media/"), ownerMedia.status);

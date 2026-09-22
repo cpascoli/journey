@@ -133,3 +133,56 @@ export async function markThreadSeen(formData: FormData): Promise<void> {
   revalidatePath(`/owner/entries/${entryId}`);
   revalidatePath("/owner");
 }
+
+export type EditTextState = { error?: string; saved?: boolean };
+
+/**
+ * Corrects an entry's text from the dashboard, in both languages.
+ *
+ * Only the text columns: tags and visibility decide who may read an entry,
+ * and `save_entry_text` cannot reach them. The app stays the source of truth,
+ * so a later Update Website from the phone replaces whatever is saved here.
+ */
+export async function saveEntryText(
+  _state: EditTextState,
+  formData: FormData,
+): Promise<EditTextState> {
+  try {
+    await requireSameOrigin();
+  } catch {
+    return { error: "That request did not come from the dashboard." };
+  }
+  if (!await currentOwner()) redirect("/owner/login");
+
+  const id = formData.get("id");
+  if (typeof id !== "string" || !OWNER_UUID.test(id)) {
+    return { error: "That entry could not be found." };
+  }
+  const text = (name: string, max = 20_000) => {
+    const value = formData.get(name);
+    return typeof value === "string" ? value.slice(0, max) : "";
+  };
+  const language = text("translation_language", 10);
+  if (language !== "" && language !== "en" && language !== "it") {
+    return { error: "A translation must be Italian, English, or none." };
+  }
+
+  const { data, error } = await adminClient().rpc("save_entry_text", {
+    p_id: id,
+    p_title: text("title", 300),
+    p_notes: text("notes"),
+    p_narrative: text("narrative"),
+    p_translation_language: language,
+    p_translated_title: text("translated_title", 300),
+    p_translated_notes: text("translated_notes"),
+    p_translated_narrative: text("translated_narrative"),
+  });
+  if (error) return { error: "The text could not be saved." };
+  if (!(data as { saved: boolean }[])[0]?.saved) {
+    return { error: "That entry could not be found." };
+  }
+
+  revalidatePath(`/owner/entries/${id}`);
+  revalidatePath("/read", "layout");
+  return { saved: true };
+}

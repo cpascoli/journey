@@ -2,10 +2,12 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { Conversations } from "@/app/owner/Conversations";
+import { EditTextForm } from "./EditTextForm";
 import { MediaGrid } from "@/app/MediaGrid";
 import { currentLanguage } from "@/lib/i18n/current";
 import { currentOwner } from "@/lib/auth/access";
 import { conversationsForEntry } from "@/lib/owner/comments";
+import { editableEntryText } from "@/lib/owner/reading";
 import { ownerEntry } from "@/lib/owner/reading";
 import { adminClient } from "@/lib/supabase/admin";
 
@@ -26,7 +28,10 @@ export default async function OwnerEntryPage({ params }: Params) {
   const db = adminClient();
   const entry = await ownerEntry(db, id);
   if (!entry) notFound();
-  const threads = await conversationsForEntry(db, id);
+  const [threads, editable] = await Promise.all([
+    conversationsForEntry(db, id),
+    editableEntryText(db, id),
+  ]);
 
   return (
     <main className="reader">
@@ -41,6 +46,12 @@ export default async function OwnerEntryPage({ params }: Params) {
         <MediaGrid entryId={entry.id} language={language} media={entry.media} />
         {entry.text && <div className="entry-text">{entry.text}</div>}
       </article>
+      {editable && (
+        <section className="panel">
+          <h2>Edit text</h2>
+          <EditTextForm entry={editable} />
+        </section>
+      )}
       <Conversations threads={threads} />
     </main>
   );
