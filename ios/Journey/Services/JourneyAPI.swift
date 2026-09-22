@@ -99,11 +99,13 @@ struct JourneyAPI {
         return try Self.decoder.decode(SetInviteTagsResponse.self, from: data).invite.tagIds
     }
 
-    /// Issues a new link and invalidates the old one. Like creation, the link
-    /// comes back once and must not be persisted.
-    func replaceInviteLink(id: UUID) async throws -> URL {
+    /// Issues a new link and invalidates the old one. The token comes back
+    /// once: the website keeps only its hash and cannot show it again, so the
+    /// caller must remember it (see `InviteLinks`) or it is lost.
+    func replaceInviteLink(id: UUID) async throws -> (token: String, url: URL) {
         let data = try await send("POST", "api/v1/owner/invites/\(id.uuidString.lowercased())/token")
-        return try Self.decoder.decode(InviteLinkResponse.self, from: data).url
+        let issued = try Self.decoder.decode(InviteLinkResponse.self, from: data)
+        return (issued.token, issued.url)
     }
 
     // MARK: Comments
@@ -380,6 +382,9 @@ nonisolated struct RemoteInvite: Decodable, Identifiable, Sendable {
 
 nonisolated struct CreatedInvite: Decodable, Sendable {
     let invite: RemoteInvite
+    /// Returned once: the website keeps only its hash. `InviteLinks` remembers
+    /// it so the link can be shared again without issuing a new one.
+    let token: String
     let url: URL
 }
 
@@ -435,6 +440,7 @@ private nonisolated struct SetInviteTagsResponse: Decodable {
 }
 
 private nonisolated struct InviteLinkResponse: Decodable {
+    let token: String
     let url: URL
 }
 
@@ -449,9 +455,10 @@ private nonisolated struct InviteListResponse: Decodable {
 
 private nonisolated struct CreateInviteResponse: Decodable {
     let invite: RemoteInvite
+    let token: String
     let url: URL
 
-    var created: CreatedInvite { CreatedInvite(invite: invite, url: url) }
+    var created: CreatedInvite { CreatedInvite(invite: invite, token: token, url: url) }
 }
 
 private nonisolated struct PutEntryResponse: Decodable {

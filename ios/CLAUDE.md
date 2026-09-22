@@ -147,11 +147,19 @@ xcodebuild test -project Journey.xcodeproj -scheme Journey \
 - Sharing lives in its own tab, not in Settings: it is used regularly, while
   settings are set once. `DemoWalkthrough` taps tabs by label, so tab order
   can change, but Write must stay first.
-- The invite detail always offers a share affordance: the link itself when one
-  has just been made, otherwise a button that makes one. Journey keeps no
-  link — the website stores only a hash — so sharing an existing invitation
-  means issuing a new link, and the old one stops working. The wording says
-  so rather than letting it surprise.
+- `InviteLinks` remembers each invitation link this phone issues, so one can
+  be shared again without breaking the old one. Only the **token** is kept,
+  in the Keychain (this device only), and the URL is rebuilt from the current
+  website — so a remembered link survives the journal changing domain. The
+  index of which invitations have a token is in UserDefaults, which is what
+  makes `prune` possible; revoking forgets the token rather than leaving the
+  secret behind. A test bundle has no Keychain entitlement, so the store is
+  injectable (`InviteSecretStore`).
+- The invite detail always offers a share affordance: the remembered link when
+  there is one, otherwise a button that issues one. An invitation created
+  before this existed, or on another phone, has no remembered token — the
+  website stores only a hash — so sharing it means issuing a new link, and
+  the wording says so rather than letting it surprise.
 - `InviteManagementView` lists invitations; tapping one opens its detail, where
   the allowed tags are saved as a whole set and the link can be replaced. Tag
   edits are not applied until *Save*, so widening access is always deliberate,

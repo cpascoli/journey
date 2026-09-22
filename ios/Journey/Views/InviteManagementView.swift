@@ -129,6 +129,7 @@ struct InviteManagementView: View {
         defer { isLoading = false }
         do {
             invites = try await api.invites()
+            InviteLinks.prune(keeping: invites.filter { $0.revokedAt == nil }.map(\.id))
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -142,6 +143,7 @@ struct InviteManagementView: View {
             try await api.putTag(id: tag.id, name: tag.name, color: tag.color.rawValue)
         }
         let created = try await api.createInvite(name: name, tagIDs: Array(tagIDs))
+        InviteLinks.remember(token: created.token, for: created.invite.id)
         shareURL = created.url
         invites.insert(created.invite, at: 0)
     }
@@ -151,6 +153,8 @@ struct InviteManagementView: View {
             guard let api = JourneyAPI.configured() else { return }
             do {
                 try await api.revokeInvite(id: invite.id)
+                // A revoked link opens nothing, so stop keeping its secret.
+                InviteLinks.forget(invite.id)
                 await reload()
             } catch {
                 errorMessage = error.localizedDescription
@@ -244,6 +248,8 @@ private struct InviteDetailView: View {
     @State private var replacedURL: URL?
     @State private var isConfirmingReplace = false
     @State private var errorMessage: String?
+    /// The link this phone remembers issuing, if it still has it.
+    @State private var rememberedURL: URL?
 
     init(invite: RemoteInvite, tags: [Tag], onChange: @escaping () async -> Void) {
         self.invite = invite
@@ -254,6 +260,24 @@ private struct InviteDetailView: View {
 
     private var isRevoked: Bool { invite.revokedAt != nil }
     private var hasAPI: Bool { JourneyAPI.configured() != nil }
+
+    private var replaceLabel: String {
+        if isReplacing { return "Creating…" }
+        return (replacedURL ?? rememberedURL) == nil ? "Create a Link to Share" : "Replace This Link"
+    }
+
+    private var linkFooter: String {
+        if isRevoked {
+            return "This invitation is revoked, so its link opens nothing. Create a new invitation instead."
+        }
+        if replacedURL != nil {
+            return "Share this now. Any previous link has stopped working."
+        }
+        if rememberedURL != nil {
+            return "This iPhone remembers the link it issued, so you can send it again. Replace it only if it reached someone it should not have — the current link stops working immediately."
+        }
+        return "This iPhone does not have this invitation's link: it was issued before Journey started remembering them, or on another device. The website stores only a hash and cannot show it again, so sharing means issuing a new link, and the current one stops working."
+    }
     private var hasChanges: Bool { selected != Set(invite.tagIds) }
 
     var body: some View {
@@ -273,12 +297,13 @@ private struct InviteDetailView: View {
             // find. Journey holds no link until one is made: the website
             // stores only a hash, so there is nothing to show again.
             Section {
-                if let replacedURL {
-                    ShareLink(item: replacedURL, subject: Text("Journey invitation")) {
+                if let link = replacedURL ?? rememberedURL {
+                    ShareLink(item: link, subject: Text("Journey invitation")) {
                         Label("Share Invitation Link", systemImage: "square.and.arrow.up")
                     }
-                } else if !isRevoked {
-                    Button(isReplacing ? "Creating…" : "Create a Link to Share", systemImage: "link") {
+                }
+                if !isRevoked {
+                    Button(replaceLabel, systemImage: "arrow.triangle.2.circlepath") {
                         isConfirmingReplace = true
                     }
                     .disabled(isReplacing || !hasAPI)
@@ -286,13 +311,7 @@ private struct InviteDetailView: View {
             } header: {
                 Text("Invitation Link")
             } footer: {
-                if replacedURL != nil {
-                    Text("Share this now. Journey does not save it and the website cannot show it again. Any previous link has stopped working.")
-                } else if isRevoked {
-                    Text("This invitation is revoked, so it has no link. Create a new invitation instead.")
-                } else {
-                    Text("Journey does not keep invitation links, and the website cannot show one again — it stores only a hash. Creating a link to share stops the current one working.")
-                }
+                Text(linkFooter)
             }
 
             Section {
@@ -321,6 +340,10 @@ private struct InviteDetailView: View {
         }
         .navigationTitle(invite.name)
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            guard let website = JourneyAPI.configured()?.baseURL else { return }
+            rememberedURL = InviteLinks.url(for: invite.id, website: website)
+        }
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button(isSaving ? "Saving…" : "Save") { save() }
@@ -372,7 +395,10 @@ private struct InviteDetailView: View {
         errorMessage = nil
         Task {
             do {
-                replacedURL = try await api.replaceInviteLink(id: invite.id)
+                let issued = try await api.replaceInviteLink(id: invite.id)
+                InviteLinks.remember(token: issued.token, for: invite.id)
+                replacedURL = issued.url
+                rememberedURL = issued.url
                 await onChange()
             } catch {
                 errorMessage = error.localizedDescription
