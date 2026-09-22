@@ -42,6 +42,10 @@ struct PublishSheet: View {
     @State private var report: Publisher.Report?
     @State private var errorMessage: String?
     @State private var isConfirmingUnpublish = false
+    @State private var isConfirmingOverwrite = false
+    @State private var isReviewingWebsiteEdit = false
+    /// Set when the website holds text the app never sent.
+    @State private var websiteEdit: RemoteEntryState?
     @State private var api = JourneyAPI.configured()
     @Environment(\.dismiss) private var dismiss
     @Environment(Publisher.self) private var publisher
@@ -110,8 +114,35 @@ struct PublishSheet: View {
                     }
                 }
 
+                if let websiteEdit, let text = websiteEdit.text {
+                    Section {
+                        Button("Review the Website's Text", systemImage: "arrow.triangle.branch") {
+                            isReviewingWebsiteEdit = true
+                        }
+                    } header: {
+                        Text("Edited on the Website")
+                    } footer: {
+                        Text(websiteEditFooter(websiteEdit))
+                    }
+                    .sheet(isPresented: $isReviewingWebsiteEdit) {
+                        WebsiteTextReview(entry: entry, remote: text, updatedAt: websiteEdit.updatedAt) {
+                            guard let api else { return }
+                            try publisher.adoptWebsiteText(text, into: entry, api: api)
+                            self.websiteEdit = nil
+                        }
+                    }
+                }
+
                 Section {
-                    Button(isPublished ? "Update Website" : "Publish", systemImage: "arrow.up.circle", action: publish)
+                    Button(isPublished ? "Update Website" : "Publish", systemImage: "arrow.up.circle") {
+                        // Publishing would replace words written on the website,
+                        // so it stops being a one-tap action while they differ.
+                        if websiteEdit != nil {
+                            isConfirmingOverwrite = true
+                        } else {
+                            publish()
+                        }
+                    }
                         .disabled(api == nil || publisher.isWorking)
                     if isPublished {
                         Button("Unpublish", systemImage: "trash", role: .destructive) { isConfirmingUnpublish = true }
@@ -139,6 +170,20 @@ struct PublishSheet: View {
                 }
             }
             .interactiveDismissDisabled(publisher.isWorking)
+            .task {
+                guard let api else { return }
+                websiteEdit = await publisher.websiteEdit(for: entry, api: api)
+            }
+            .confirmationDialog(
+                "Replace the website's text?",
+                isPresented: $isConfirmingOverwrite,
+                titleVisibility: .visible
+            ) {
+                Button("Replace It", role: .destructive) { publish() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This entry was edited on the website. Publishing sends this iPhone's text instead, and the website's version is lost.")
+            }
             .confirmationDialog("Unpublish this entry?", isPresented: $isConfirmingUnpublish, titleVisibility: .visible) {
                 Button("Unpublish", role: .destructive, action: unpublish)
             } message: {
@@ -153,6 +198,14 @@ struct PublishSheet: View {
         case .published: "Published"
         case .needsUpdate: "Changed since publishing"
         }
+    }
+
+    private func websiteEditFooter(_ state: RemoteEntryState) -> String {
+        guard let updatedAt = state.updatedAt else {
+            return "This entry's text was changed on the website. Review it before publishing, or publishing will replace it."
+        }
+        let when = updatedAt.formatted(date: .abbreviated, time: .shortened)
+        return "The website's text was changed there on \(when). Review it before publishing, or publishing will replace it."
     }
 
     private var visibilityFooter: String {
@@ -259,6 +312,96 @@ struct PublishSheet: View {
             } catch {
                 errorMessage = error.localizedDescription
             }
+        }
+    }
+}
+
+/// The website's text beside this iPhone's, so the owner can see what changed
+/// before deciding which to keep.
+private struct WebsiteTextReview: View {
+    let entry: Entry
+    let remote: RemoteEntryText
+    let updatedAt: Date?
+    let adopt: () throws -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var errorMessage: String?
+
+    private struct Field: Identifiable {
+        let id: String
+        let label: String
+        let mine: String
+        let theirs: String
+        var changed: Bool { mine != theirs }
+    }
+
+    private var fields: [Field] {
+        [
+            Field(id: "title", label: "Title", mine: entry.title, theirs: remote.title),
+            Field(id: "story", label: "Story", mine: entry.narrative, theirs: remote.narrative),
+            Field(id: "notes", label: "Notes", mine: entry.body, theirs: remote.notes),
+            Field(id: "tlang", label: "Translation language",
+                  mine: entry.translationLanguage, theirs: remote.translationLanguage),
+            Field(id: "ttitle", label: "Translated title",
+                  mine: entry.translatedTitle, theirs: remote.translatedTitle),
+            Field(id: "tstory", label: "Translated story",
+                  mine: entry.translatedNarrative, theirs: remote.translatedNarrative),
+            Field(id: "tnotes", label: "Translated notes",
+                  mine: entry.translatedBody, theirs: remote.translatedNotes),
+        ].filter(\.changed)
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(fields) { field in
+                    Section(field.label) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("On this iPhone").font(.caption).foregroundStyle(.secondary)
+                            Text(field.mine.isEmpty ? "—" : field.mine)
+                        }
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("On the website").font(.caption).foregroundStyle(Color.accentColor)
+                            Text(field.theirs.isEmpty ? "—" : field.theirs)
+                        }
+                    }
+                }
+
+                Section {
+                    Button("Use the Website's Text", systemImage: "arrow.down.circle") { take() }
+                } footer: {
+                    if let errorMessage {
+                        Text(errorMessage).foregroundStyle(.red)
+                    } else {
+                        Text("Replaces this iPhone's text with the website's, then republishes so the two agree. To keep this iPhone's text instead, close this and publish.")
+                    }
+                }
+            }
+            .navigationTitle("Website's Text")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
+            .safeAreaInset(edge: .top) {
+                if let updatedAt {
+                    Text("Changed on the website \(updatedAt.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                }
+            }
+        }
+    }
+
+    private func take() {
+        do {
+            try adopt()
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 }

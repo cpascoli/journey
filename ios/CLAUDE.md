@@ -160,6 +160,15 @@ xcodebuild test -project Journey.xcodeproj -scheme Journey \
 - `CommentsView` lists reader conversations (Sharing → Comments).
   Each is private to one invitation, so one entry can show several threads;
   opening a thread is what marks it read. Only the owner can delete a comment.
+- Publishing is one-way, with one exception: the website clears
+  `client_content_hash` when its text is edited there, so
+  `Publisher.websiteEdit` can tell that the website holds words the app never
+  sent. `PublishSheet` then shows when it changed, offers a field-by-field
+  review, and makes publishing confirm before replacing it.
+  `adoptWebsiteText` takes the website's words and republishes them, which
+  restores the hash — otherwise the entry would look edited forever. The
+  website's `notes` is the app's `body`, and `translated_notes` is
+  `translatedBody`; get that mapping wrong and every entry looks changed.
 - A published entry, or a journal holding one, can't be deleted in the app:
   unpublish first, or it would stay online. Tag renames reach the website at
   the next publish of an entry that uses the tag.

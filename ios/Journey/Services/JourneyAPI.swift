@@ -461,6 +461,39 @@ private nonisolated struct PutEntryResponse: Decodable {
 nonisolated struct RemoteEntryState: Equatable, Sendable {
     var mediaKeys: [String]
     var clientContentHash: String?
+    /// When the website's copy last changed, whoever changed it.
+    var updatedAt: Date?
+    var revision: Int?
+    var text: RemoteEntryText?
+
+    /// The website clears the content hash when its text is edited there, so
+    /// a missing hash on an entry the app has published means the website
+    /// holds words the app never sent.
+    var wasEditedOnWebsite: Bool { clientContentHash == nil }
+}
+
+/// The entry's text as the website holds it.
+nonisolated struct RemoteEntryText: Decodable, Equatable, Sendable {
+    var title: String
+    var notes: String
+    var narrative: String
+    var translationLanguage: String
+    var translatedTitle: String
+    var translatedNotes: String
+    var translatedNarrative: String
+
+    /// True when the website's words differ from this entry's. Compared field
+    /// by field rather than by hash, so the answer survives a change to how
+    /// the hash is computed.
+    func differs(from entry: Entry) -> Bool {
+        title != entry.title
+            || notes != entry.body
+            || narrative != entry.narrative
+            || translationLanguage != entry.translationLanguage
+            || translatedTitle != entry.translatedTitle
+            || translatedNotes != entry.translatedBody
+            || translatedNarrative != entry.translatedNarrative
+    }
 }
 
 private nonisolated struct GetEntryResponse: Decodable {
@@ -468,9 +501,49 @@ private nonisolated struct GetEntryResponse: Decodable {
         struct Media: Decodable { var assetKey: String }
         var media: [Media]
         var clientContentHash: String?
+        var updatedAt: String?
+        var revision: Int?
+        var title: String?
+        var notes: String?
+        var narrative: String?
+        var translationLanguage: String?
+        var translatedTitle: String?
+        var translatedNotes: String?
+        var translatedNarrative: String?
 
         var state: RemoteEntryState {
-            RemoteEntryState(mediaKeys: media.map(\.assetKey), clientContentHash: clientContentHash)
+            RemoteEntryState(
+                mediaKeys: media.map(\.assetKey),
+                clientContentHash: clientContentHash,
+                updatedAt: updatedAt.flatMap { Self.timestamps.date(from: $0) },
+                revision: revision,
+                text: title == nil ? nil : RemoteEntryText(
+                    title: title ?? "",
+                    notes: notes ?? "",
+                    narrative: narrative ?? "",
+                    translationLanguage: translationLanguage ?? "",
+                    translatedTitle: translatedTitle ?? "",
+                    translatedNotes: translatedNotes ?? "",
+                    translatedNarrative: translatedNarrative ?? ""
+                )
+            )
+        }
+
+        /// Postgres usually sends fractional seconds but drops them on an exact
+        /// second, and one formatter cannot read both, so try each.
+        nonisolated(unsafe) static let timestamps = Timestamps()
+
+        nonisolated struct Timestamps {
+            private let fractional: ISO8601DateFormatter = {
+                let formatter = ISO8601DateFormatter()
+                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                return formatter
+            }()
+            private let whole = ISO8601DateFormatter()
+
+            func date(from text: String) -> Date? {
+                fractional.date(from: text) ?? whole.date(from: text)
+            }
         }
     }
 

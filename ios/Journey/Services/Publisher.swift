@@ -80,6 +80,41 @@ final class Publisher {
         }
     }
 
+    /// The website's copy of an entry, when it holds words the app never sent.
+    ///
+    /// The website clears `client_content_hash` when its text is edited there,
+    /// which is what makes this answerable without storing a second copy
+    /// locally. Returns nil when the two agree, when nothing is published, or
+    /// when the website cannot be reached — a check that fails must not look
+    /// like a conflict.
+    func websiteEdit(for entry: Entry, api: JourneyAPI) async -> RemoteEntryState? {
+        guard entry.isPublicationBound else { return nil }
+        guard let state = try? await api.entryState(id: entry.id) else { return nil }
+        guard state.wasEditedOnWebsite, let text = state.text, text.differs(from: entry) else {
+            return nil
+        }
+        return state
+    }
+
+    /// Takes the website's words as the entry's own, then republishes so the
+    /// two agree again and a later edit is detectable.
+    func adoptWebsiteText(_ text: RemoteEntryText, into entry: Entry, api: JourneyAPI) throws {
+        entry.title = text.title
+        entry.body = text.notes
+        entry.narrative = text.narrative
+        // Words written on the website are the owner's own, not a draft.
+        entry.narrativeSource = .user
+        entry.translationLanguage = text.translationLanguage
+        entry.translatedTitle = text.translatedTitle
+        entry.translatedBody = text.translatedNotes
+        entry.translatedNarrative = text.translatedNarrative
+        entry.updatedAt = .now
+        try context.save()
+        // Sends the same words back, which restores the content hash the
+        // website cleared; without that the entry would look edited forever.
+        _ = try enqueue(entry, kind: .publish, api: api)
+    }
+
     /// Repoints published work at the same website under a new address.
     ///
     /// A destination is identified by its URL and key fingerprint, so renaming
