@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { ROLE_SCOPES } from "./scopes";
 import { ApiError } from "./errors";
 import { authenticate, parseApiKeys, requireScope } from "./keys";
 
@@ -30,6 +31,15 @@ describe("parseApiKeys", () => {
     const [owner, agent] = parseApiKeys(keys);
     expect(owner?.scopes).toContain("journey:entries:write");
     expect(agent?.scopes).toEqual(["journey:entries:read", "journey:proposals:write"]);
+  });
+
+  /** Comments are private correspondence between the owner and a reader. */
+  it("keeps every agent role away from readers' comments", () => {
+    for (const role of ["agent", "agent-read"] as const) {
+      const scopes = ROLE_SCOPES[role] as readonly string[];
+      expect(scopes).not.toContain("journey:comments:manage");
+    }
+    expect(ROLE_SCOPES.owner).toContain("journey:comments:manage");
   });
 
   it("treats a missing or blank variable as no keys", () => {

@@ -333,6 +333,66 @@ export function ownerOpenApiDocument(origin: string) {
           },
         }),
       },
+      "/api/v1/owner/comments": {
+        get: op({
+          operationId: "listCommentThreads",
+          summary: "List reader conversations",
+          scope: "journey:comments:manage",
+          responses: { "200": ok("One thread per invitation per entry, newest first") },
+        }),
+      },
+      "/api/v1/owner/comments/{id}": {
+        delete: op({
+          operationId: "deleteComment",
+          summary: "Delete a comment",
+          scope: "journey:comments:manage",
+          parameters: [uuidPath("id", "Comment id.")],
+          responses: { "404": errorResponse },
+        }),
+      },
+      "/api/v1/owner/entries/{id}/comments": {
+        get: op({
+          operationId: "readCommentThread",
+          summary: "Read one conversation",
+          scope: "journey:comments:manage",
+          parameters: [
+            uuidPath("id", "The app's entry id."),
+            {
+              name: "invite",
+              in: "query",
+              required: true,
+              schema: { type: "string", format: "uuid" },
+              description: "Which invitation's thread to read.",
+            },
+          ],
+        }),
+        post: op({
+          operationId: "replyToComment",
+          summary: "Reply in a conversation",
+          scope: "journey:comments:manage",
+          parameters: [uuidPath("id", "The app's entry id.")],
+          requestBody: jsonBody({
+            type: "object",
+            required: ["invite_id", "body"],
+            properties: {
+              invite_id: { type: "string", format: "uuid" },
+              body: { type: "string", maxLength: 2000 },
+            },
+          }),
+          responses: { "201": ok("Replied"), "409": errorResponse },
+        }),
+        patch: op({
+          operationId: "markCommentsSeen",
+          summary: "Mark a conversation as seen",
+          scope: "journey:comments:manage",
+          parameters: [uuidPath("id", "The app's entry id.")],
+          requestBody: jsonBody({
+            type: "object",
+            required: ["invite_id"],
+            properties: { invite_id: { type: "string", format: "uuid" } },
+          }),
+        }),
+      },
       "/api/v1/owner/proposals": {
         get: op({
           operationId: "listProposals",

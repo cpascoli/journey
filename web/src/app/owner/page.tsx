@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { MediaGrid } from "@/app/MediaGrid";
 import { currentLanguage } from "@/lib/i18n/current";
 import { currentOwner } from "@/lib/auth/access";
+import { commentThreads } from "@/lib/owner/comments";
 import { ownerEntries } from "@/lib/owner/reading";
 import { adminClient } from "@/lib/supabase/admin";
 
@@ -26,11 +27,13 @@ export default async function OwnerDashboard() {
   const owner = await currentOwner();
   if (!owner) redirect("/owner/login");
   const db = adminClient();
-  const [entries, { data: invites }, { data: tags }] = await Promise.all([
+  const [entries, threads, { data: invites }, { data: tags }] = await Promise.all([
     ownerEntries(db),
+    commentThreads(db),
     db.from("invites").select("id, name, created_at, revoked_at, last_seen_at, invite_tags(tag_id)").order("created_at", { ascending: false }),
     db.from("tags").select("id, name").order("name"),
   ]);
+  const unseenTotal = threads.reduce((sum, thread) => sum + thread.unseen_count, 0);
   const tagList = (tags ?? []) as { id: string; name: string }[];
   const tagNames = new Map(tagList.map((tag) => [tag.id, tag.name]));
 
@@ -40,6 +43,31 @@ export default async function OwnerDashboard() {
         <div><p className="eyebrow">Journey owner</p><h1>Dashboard</h1></div>
         <form action={logout}><button className="secondary" type="submit">Sign out</button></form>
       </header>
+
+      <section className="panel">
+        <h2>
+          Conversations
+          {unseenTotal > 0 && <span className="badge shared">{unseenTotal} new</span>}
+        </h2>
+        {threads.length === 0 ? <p className="empty">No comments yet.</p> : (
+          <div className="rows">
+            {threads.map((thread) => (
+              <div className="row" key={`${thread.entry_id}:${thread.invite_id}`}>
+                <div>
+                  <Link href={`/owner/entries/${thread.entry_id}`}>
+                    {thread.entry_title || "Untitled entry"}
+                  </Link>
+                  <p>
+                    {thread.invite_name} · {thread.comment_count} comment
+                    {thread.comment_count === 1 ? "" : "s"} · {thread.entry_day}
+                  </p>
+                </div>
+                {thread.unseen_count > 0 && <span className="badge shared">{thread.unseen_count} new</span>}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="panel">
         <h2>Published entries</h2>

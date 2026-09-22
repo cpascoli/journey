@@ -560,6 +560,95 @@ input {
   }
 }
 
+/* One flat conversation under an entry. */
+.comments {
+  margin-top: 3.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+.comments h2 {
+  margin: 0 0 1.25rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 0 0 1.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.comment {
+  max-width: 34rem;
+  padding: 0.7rem 0.95rem;
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--muted) 12%, transparent);
+}
+
+/* The owner's replies sit on the other side, so a conversation reads as one. */
+.comment.owner {
+  margin-left: auto;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.comment-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 0.25rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.comment-body {
+  margin: 0;
+  /* A comment is plain text: keep the writer's line breaks, nothing more. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.comment-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.comment-form textarea {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent);
+  border-radius: 0.6rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  resize: vertical;
+}
+
+.comment-form button {
+  padding: 0.5rem 1.1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: var(--paper);
+  font-family: system-ui, sans-serif;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.comment-form button[disabled] {
+  opacity: 0.6;
+}
+
 .media-placeholder {
   margin-top: 1.5rem;
   padding: 1rem;

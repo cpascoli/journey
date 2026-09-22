@@ -47,6 +47,15 @@ export type Strings = {
   clearFilters: string;
   showingCount: (matching: number, total: number) => string;
   noMatches: string;
+  conversation: string;
+  noComments: string;
+  commentPlaceholder: string;
+  sendComment: string;
+  you: string;
+  fromOwner: string;
+  commentRefusedBody: string;
+  commentRefusedTooMany: string;
+  commentRefusedUnavailable: string;
 };
 
 const en: Strings = {
@@ -92,6 +101,15 @@ const en: Strings = {
   showingCount: (matching, total) =>
     matching === total ? `${total} entries` : `${matching} of ${total} entries`,
   noMatches: "No entries match these filters.",
+  conversation: "Comments",
+  noComments: "No comments yet. Say something about this day.",
+  commentPlaceholder: "Write a comment…",
+  sendComment: "Send",
+  you: "You",
+  fromOwner: "Carlo",
+  commentRefusedBody: "A comment needs some text, and at most 2000 characters.",
+  commentRefusedTooMany: "That's a lot of comments at once. Try again in a little while.",
+  commentRefusedUnavailable: "This comment could not be added.",
 };
 
 const it: Strings = {
@@ -139,6 +157,15 @@ const it: Strings = {
       ? `${total} voci`
       : `${matching} di ${total} voci`,
   noMatches: "Nessuna voce corrisponde a questi filtri.",
+  conversation: "Commenti",
+  noComments: "Nessun commento. Racconta qualcosa di questa giornata.",
+  commentPlaceholder: "Scrivi un commento…",
+  sendComment: "Invia",
+  you: "Tu",
+  fromOwner: "Carlo",
+  commentRefusedBody: "Un commento deve avere del testo, e al massimo 2000 caratteri.",
+  commentRefusedTooMany: "Troppi commenti in una volta. Riprova tra poco.",
+  commentRefusedUnavailable: "Non è stato possibile aggiungere il commento.",
 };
 
 const BY_LANGUAGE: Record<Language, Strings> = { en, it };

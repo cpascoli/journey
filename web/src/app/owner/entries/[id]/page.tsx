@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import { Conversations } from "@/app/owner/Conversations";
 import { MediaGrid } from "@/app/MediaGrid";
 import { currentLanguage } from "@/lib/i18n/current";
 import { currentOwner } from "@/lib/auth/access";
+import { conversationsForEntry } from "@/lib/owner/comments";
 import { ownerEntry } from "@/lib/owner/reading";
 import { adminClient } from "@/lib/supabase/admin";
 
@@ -21,8 +23,10 @@ export default async function OwnerEntryPage({ params }: Params) {
   if (!await currentOwner()) redirect("/owner/login");
   const id = (await params).id;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const entry = await ownerEntry(adminClient(), id);
+  const db = adminClient();
+  const entry = await ownerEntry(db, id);
   if (!entry) notFound();
+  const threads = await conversationsForEntry(db, id);
 
   return (
     <main className="reader">
@@ -37,6 +41,7 @@ export default async function OwnerEntryPage({ params }: Params) {
         <MediaGrid entryId={entry.id} language={language} media={entry.media} />
         {entry.text && <div className="entry-text">{entry.text}</div>}
       </article>
+      <Conversations threads={threads} />
     </main>
   );
 }

@@ -5,9 +5,11 @@ import { SiteHeader } from "@/app/SiteHeader";
 import { entryTextFor } from "@/lib/domain/language";
 import { currentLanguage } from "@/lib/i18n/current";
 import { formatDay, stringsFor } from "@/lib/i18n/strings";
+import { threadForCurrentInvite } from "@/lib/reader/comments";
 import { entryForCurrentInvite } from "@/lib/reader/entries";
 
 import { NoAccess } from "../NoAccess";
+import { CommentThread } from "./CommentThread";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,7 @@ export default async function ReaderEntryPage({ params }: Params) {
 
   const { entry } = result;
   const { title, text } = entryTextFor(language, entry);
+  const comments = await threadForCurrentInvite(entry.id);
   return (
     <main className="reader">
       <SiteHeader
@@ -40,6 +43,7 @@ export default async function ReaderEntryPage({ params }: Params) {
         <MediaGrid entryId={entry.id} language={language} media={entry.media} />
         {text && <div className="entry-text">{text}</div>}
       </article>
+      <CommentThread comments={comments} entryId={entry.id} language={language} />
     </main>
   );
 }

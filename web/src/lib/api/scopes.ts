@@ -4,6 +4,7 @@ export const API_SCOPES = [
   "journey:invites:manage",
   "journey:proposals:write",
   "journey:proposals:decide",
+  "journey:comments:manage",
 ] as const;
 
 export type ApiScope = (typeof API_SCOPES)[number];
@@ -11,7 +12,8 @@ export type ApiScope = (typeof API_SCOPES)[number];
 /**
  * `owner` is the iPhone app. `agent` is the ChatGPT GPT: it reads entries and
  * proposes story text, and must never publish, delete or decide on its own
- * proposals, so it gets no write, invite or decide scope.
+ * proposals, so it gets no write, invite or decide scope. It must also never
+ * reach readers' comments, which are private correspondence.
  */
 export const ROLE_SCOPES = {
   owner: [...API_SCOPES],

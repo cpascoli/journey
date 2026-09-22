@@ -81,6 +81,18 @@ Keep pure logic in `src/lib/domain`, where Vitest reaches it.
   on the path alone, and send a delete to the wrong store.
 - SigV4 signing lives once, in `src/lib/media/sigv4.mjs`, because the operator
   cleanup script runs under bare node and must share it. Don't copy it.
+- Comments are the only thing a reader may write. Authorization is not in the
+  route: `commentable_invite` re-applies the all-tags rule, so a reader can
+  only see or add comments on an entry their invitation can already read, and
+  losing access hides the conversation without deleting it.
+- A comment thread is private to one invitation, the owner's replies included.
+  Never widen `comment_thread_for_invite` to join threads: an invitee must not
+  learn who else was invited.
+- An invite link is a bearer token, so `post_reader_comment` enforces an
+  hourly limit per invitation in SQL. Keep the limit there rather than in a
+  route, where it would not survive a second entry point.
+- The `agent` roles must never gain `journey:comments:manage`; comments are
+  private correspondence. `keys.test.ts` asserts it.
 - Error responses never echo database or exception messages: `dbFailure` logs
   and returns a generic error.
 - Never pass a secret as a command-line argument in a script whose errors are

@@ -79,3 +79,57 @@ export async function revokeInvite(formData: FormData): Promise<void> {
   revalidatePath("/owner");
 }
 
+
+const OWNER_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Replies in one reader's conversation. The thread must already exist, so the
+ * owner cannot open a conversation with someone who never wrote.
+ */
+export async function replyToComment(formData: FormData): Promise<void> {
+  await requireSameOrigin();
+  if (!await currentOwner()) redirect("/owner/login");
+  const entryId = formData.get("entry");
+  const inviteId = formData.get("invite");
+  const body = formData.get("body");
+  if (typeof entryId !== "string" || !OWNER_UUID.test(entryId)) return;
+  if (typeof inviteId !== "string" || !OWNER_UUID.test(inviteId)) return;
+  if (typeof body !== "string" || body.trim().length === 0 || body.length > 2000) return;
+
+  await adminClient().rpc("post_owner_comment", {
+    p_entry_id: entryId,
+    p_invite_id: inviteId,
+    p_body: body,
+  });
+  revalidatePath(`/owner/entries/${entryId}`);
+  revalidatePath("/owner");
+}
+
+export async function deleteComment(formData: FormData): Promise<void> {
+  await requireSameOrigin();
+  if (!await currentOwner()) redirect("/owner/login");
+  const id = formData.get("id");
+  const entryId = formData.get("entry");
+  if (typeof id !== "string" || !OWNER_UUID.test(id)) return;
+  await adminClient().rpc("delete_comment", { p_id: id });
+  if (typeof entryId === "string" && OWNER_UUID.test(entryId)) {
+    revalidatePath(`/owner/entries/${entryId}`);
+  }
+  revalidatePath("/owner");
+}
+
+/** Clears the unread badge once the owner has actually read a thread. */
+export async function markThreadSeen(formData: FormData): Promise<void> {
+  await requireSameOrigin();
+  if (!await currentOwner()) redirect("/owner/login");
+  const entryId = formData.get("entry");
+  const inviteId = formData.get("invite");
+  if (typeof entryId !== "string" || !OWNER_UUID.test(entryId)) return;
+  if (typeof inviteId !== "string" || !OWNER_UUID.test(inviteId)) return;
+  await adminClient().rpc("mark_thread_seen", {
+    p_entry_id: entryId,
+    p_invite_id: inviteId,
+  });
+  revalidatePath(`/owner/entries/${entryId}`);
+  revalidatePath("/owner");
+}
