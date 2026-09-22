@@ -649,6 +649,62 @@ input {
   opacity: 0.6;
 }
 
+/* A month of days that actually have entries, rather than a full calendar
+   grid of mostly empty cells. */
+.day-month {
+  margin-top: 1.5rem;
+}
+
+.day-month h3 {
+  margin: 0 0 0.6rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.day-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.day-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 2.4rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  border-radius: 0.5rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  justify-content: center;
+}
+
+.day-chip:hover,
+.day-chip:focus-visible {
+  border-color: var(--accent);
+}
+
+.day-chip .count {
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  font-size: 0.72rem;
+}
+
+.panel-note {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .media-placeholder {
   margin-top: 1.5rem;
   padding: 1rem;

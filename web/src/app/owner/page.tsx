@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { MediaGrid } from "@/app/MediaGrid";
-import { currentLanguage } from "@/lib/i18n/current";
 import { currentOwner } from "@/lib/auth/access";
+import { dayOfMonth, groupDaysByMonth } from "@/lib/domain/days";
 import { commentThreads } from "@/lib/owner/comments";
-import { ownerEntries } from "@/lib/owner/reading";
+import { ownerEntryDays } from "@/lib/owner/reading";
 import { adminClient } from "@/lib/supabase/admin";
 
 import { InviteForm } from "./InviteForm";
@@ -22,18 +21,23 @@ type Invite = {
   invite_tags: { tag_id: string }[];
 };
 
+const monthLabel = (month: string) =>
+  new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: "UTC" })
+    .format(new Date(`${month}-01T12:00:00Z`));
+
 export default async function OwnerDashboard() {
-  const language = await currentLanguage();
   const owner = await currentOwner();
   if (!owner) redirect("/owner/login");
   const db = adminClient();
-  const [entries, threads, { data: invites }, { data: tags }] = await Promise.all([
-    ownerEntries(db),
+  const [days, threads, { data: invites }, { data: tags }] = await Promise.all([
+    ownerEntryDays(db),
     commentThreads(db),
     db.from("invites").select("id, name, created_at, revoked_at, last_seen_at, invite_tags(tag_id)").order("created_at", { ascending: false }),
     db.from("tags").select("id, name").order("name"),
   ]);
-  const unseenTotal = threads.reduce((sum, thread) => sum + thread.unseen_count, 0);
+  const unseenTotal = threads.reduce((sum: number, thread) => sum + thread.unseen_count, 0);
+  const months = groupDaysByMonth(days);
+  const entryTotal = days.reduce((sum: number, entry) => sum + entry.count, 0);
   const tagList = (tags ?? []) as { id: string; name: string }[];
   const tagNames = new Map(tagList.map((tag) => [tag.id, tag.name]));
 
@@ -70,23 +74,33 @@ export default async function OwnerDashboard() {
       </section>
 
       <section className="panel">
-        <h2>Published entries</h2>
-        {entries.length === 0 ? <p className="empty">Nothing has been published yet.</p> : (
-          <div className="owner-entries">
-            {entries.map((entry) => (
-              <article className="owner-entry" key={entry.id}>
-                <div className="owner-entry-heading">
-                  <div>
-                    <h3><Link href={`/owner/entries/${entry.id}`}>{entry.title || "Untitled entry"}</Link></h3>
-                    <p>{entry.day} · {entry.journal_name}{entry.place_name ? ` · ${entry.place_name}` : ""}</p>
-                  </div>
-                  <span className={`badge ${entry.visibility}`}>{entry.visibility}</span>
+        <h2>Published days</h2>
+        {months.length === 0 ? <p className="empty">Nothing has been published yet.</p> : (
+          <>
+            <p className="panel-note">
+              {entryTotal} {entryTotal === 1 ? "entry" : "entries"} across{" "}
+              {days.length} {days.length === 1 ? "day" : "days"}. Open a day to see it
+              — photos and videos load only for the day you pick.
+            </p>
+            {months.map((month) => (
+              <div className="day-month" key={month.month}>
+                <h3>{monthLabel(month.month)}</h3>
+                <div className="day-chips">
+                  {month.days.map((entry) => (
+                    <Link
+                      className="day-chip"
+                      href={`/owner/day/${entry.day}`}
+                      key={entry.day}
+                      title={`${entry.day} · ${entry.count} ${entry.count === 1 ? "entry" : "entries"}`}
+                    >
+                      {dayOfMonth(entry.day)}
+                      {entry.count > 1 && <span className="count">{entry.count}</span>}
+                    </Link>
+                  ))}
                 </div>
-                <MediaGrid entryId={entry.id} language={language} media={entry.media} compact />
-                {entry.text && <div className="entry-text excerpt">{entry.text}</div>}
-              </article>
+              </div>
             ))}
-          </div>
+          </>
         )}
       </section>
 

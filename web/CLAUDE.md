@@ -39,6 +39,11 @@ scripts/            portable SQL runner, localhost HTTP e2e, cleanup operator
 
 Keep pure logic in `src/lib/domain`, where Vitest reaches it.
 
+The owner dashboard lists only the days that have entries and fetches no
+media; entries and their photos load for the one day opened
+(`/owner/day/[day]`). Read one entry with `ownerEntry`, which queries by id —
+never by loading everything published and filtering.
+
 ## Rules
 
 - **Pushing to `main` deploys to production.** Netlify builds from `main`, so
