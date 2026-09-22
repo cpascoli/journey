@@ -13,6 +13,7 @@ nonisolated enum CommentSummary {
 /// Reader conversations, newest first. Each is private to one invitation, so
 /// an entry commented on by two people shows as two separate threads.
 struct CommentsView: View {
+    @Environment(CommentInbox.self) private var inbox
     @State private var threads: [RemoteCommentThread] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -75,6 +76,9 @@ struct CommentsView: View {
         defer { isLoading = false }
         do {
             threads = try await api.commentThreads()
+            // The list is the freshest count there is, so the tab badge
+            // follows it rather than waiting for the next foreground.
+            inbox.note(unseenCount: threads.reduce(0) { $0 + $1.unseenCount })
         } catch {
             errorMessage = error.localizedDescription
         }

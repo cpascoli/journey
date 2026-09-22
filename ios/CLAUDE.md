@@ -147,6 +147,11 @@ xcodebuild test -project Journey.xcodeproj -scheme Journey \
   edits are not applied until *Save*, so widening access is always deliberate,
   and the row shows how many entries the invitation actually reads (from the
   website — the all-tags rule is too easy to misjudge by hand).
+- `CommentInbox` holds the unread comment count behind the Sharing tab's
+  badge. It refreshes when the app reaches the foreground, not on a timer:
+  comments arrive over days, so polling would spend battery to learn nothing.
+  The count is persisted, so the badge is right at launch and a failed
+  refresh leaves it alone rather than claiming nothing is waiting.
 - `CommentsView` lists reader conversations (Sharing → Comments).
   Each is private to one invitation, so one entry can show several threads;
   opening a thread is what marks it read. Only the owner can delete a comment.

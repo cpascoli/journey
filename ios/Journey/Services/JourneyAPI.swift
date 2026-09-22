@@ -115,6 +115,12 @@ struct JourneyAPI {
         return try Self.decoder.decode(CommentThreadsResponse.self, from: data).threads
     }
 
+    /// Just the waiting count, for the Sharing tab's badge.
+    func unseenCommentCount() async throws -> Int {
+        let data = try await send("GET", "api/v1/owner/comments")
+        return try Self.decoder.decode(CommentThreadsResponse.self, from: data).unseenTotal
+    }
+
     func comments(entryID: UUID, inviteID: UUID) async throws -> [RemoteComment] {
         let data = try await send(
             "GET", "api/v1/owner/entries/\(entryID.uuidString.lowercased())/comments",

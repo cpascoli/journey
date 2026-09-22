@@ -6,6 +6,7 @@ struct JourneyApp: App {
     private let container: ModelContainer
     @State private var locationService: LocationService
     @State private var publisher: Publisher
+    @State private var inbox = CommentInbox()
 
     init() {
         let container: ModelContainer
@@ -44,6 +45,7 @@ struct JourneyApp: App {
             RootView()
                 .environment(locationService)
                 .environment(publisher)
+                .environment(inbox)
         }
         .modelContainer(container)
     }
@@ -57,6 +59,7 @@ struct RootView: View {
     @AppStorage("appearance") private var appearance = AppearanceMode.system
     @Environment(\.scenePhase) private var scenePhase
     @Environment(Publisher.self) private var publisher
+    @Environment(CommentInbox.self) private var inbox
 
     private var journal: Journal? {
         journals.first { $0.id.uuidString == selectedJournalID }
@@ -86,6 +89,7 @@ struct RootView: View {
                         SharingView()
                     }
                 }
+                .badge(inbox.unseenCount)
                 Tab("Settings", systemImage: "gearshape", value: RootTab.settings) {
                     NavigationStack {
                         SettingsView(journals: journals, current: journal, selectedID: $selectedJournalID)
@@ -95,10 +99,14 @@ struct RootView: View {
             .preferredColorScheme(appearance.colorScheme)
             .task {
                 await publisher.activate()
+                await inbox.refresh()
             }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
-                    Task { await publisher.activate() }
+                    Task {
+                        await publisher.activate()
+                        await inbox.refresh()
+                    }
                 } else {
                     publisher.deactivate()
                 }

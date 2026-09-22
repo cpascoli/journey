@@ -5,6 +5,8 @@ import SwiftUI
 /// Its own tab rather than a section inside Settings, because sharing is
 /// something the journal does regularly, while settings are set once.
 struct SharingView: View {
+    @Environment(CommentInbox.self) private var inbox
+
     var body: some View {
         List {
             Section {
@@ -18,6 +20,7 @@ struct SharingView: View {
                 } label: {
                     Label("Comments", systemImage: "bubble.left.and.bubble.right")
                 }
+                .badge(inbox.unseenCount)
             } footer: {
                 Text("An invitation sees an entry only when it includes every tag on that entry. Each invitation has its own private conversation with you.")
             }
