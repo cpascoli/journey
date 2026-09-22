@@ -24,6 +24,18 @@
   port = 8888
   autoLaunch = false
 
+# The site is ashone.me. The .netlify.app subdomain keeps serving otherwise,
+# which would leave the journal live at two hostnames and strand invite links
+# already shared: an invite cookie is set per host, so a reader arriving on
+# the old name would be reading from a different origin. A 301 keeps the path,
+# so an existing https://journey-web.netlify.app/i/<token> link still works
+# and lands on the real domain.
+[[redirects]]
+  from = "https://journey-web.netlify.app/*"
+  to = "https://ashone.me/:splat"
+  status = 301
+  force = true
+
 # Security headers live in web/next.config.ts, not here: a [[headers]] block
 # does not reach responses served by the Next.js runtime, which is every route
 # on this site, so headers set here are silently absent in production.

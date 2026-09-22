@@ -17,6 +17,6 @@ describe("invite tokens", () => {
   });
 
   it("build the reading link", () => {
-    expect(inviteUrl("https://journey-web.netlify.app", "abc")).toBe("https://journey-web.netlify.app/i/abc");
+    expect(inviteUrl("https://ashone.me", "abc")).toBe("https://ashone.me/i/abc");
   });
 });

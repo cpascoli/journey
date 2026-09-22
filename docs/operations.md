@@ -106,8 +106,19 @@ revoked.
 The app binds online entries and queued work to a normalized website URL plus
 owner-key fingerprint. It blocks changing either while bindings remain.
 
-- Planned move: keep the old destination/key available, unpublish all entries,
-  wait until the outbox is empty, change the website/key, then republish.
+- Rename (same server, new address): in Settings → Website, type the new
+  address and tap **Move to This Address**. The app reads a published entry
+  back from the new address and requires its content hash to match before
+  rebinding, so it cannot be pointed at a different journal. Nothing on the
+  website changes. Do not unpublish first: that deletes entries, and their
+  media and readers' comments cascade with them.
+  Afterwards, replace each invitation's link (Settings → Sharing →
+  Invitations → the invitation → Replace Link) so readers are on the new host;
+  links already shared keep working through the redirect in `netlify.toml`.
+- Move to a different server or key: keep the old destination/key available,
+  unpublish all entries, wait until the outbox is empty, change the
+  website/key, then republish. This loses comments, which cascade with their
+  entries.
 - Lost iPhone key: restore the exact old owner key from the recovery copy so
   queued updates/removals can finish. A different key cannot impersonate that
   binding.
