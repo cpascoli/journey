@@ -39,7 +39,7 @@ one journal or several. Commands below run from this `ios/` folder.
   each screen's title. Settings also has a light / dark / system appearance
   switch.
 - **Publish to your own website.** Add the website and its owner key in
-  *Settings → Website*, then tap the globe on an entry in a journal page. You
+  *Settings → Website*, then tap the globe on an entry in a journal page. Invitations and readers' comments live in the *Sharing* tab. You
   choose who can read it (only you, or the people you invite, limited by its
   tags) and how precisely its location shows — city by default. Photos are
   uploaded at up to 2048 pixels with their location and camera details

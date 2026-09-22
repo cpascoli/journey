@@ -92,8 +92,8 @@
 			isa = PBXGroup;
 			children = (
 				1C13D53F51D5AC5126011FD2 /* Journey */,
-				2AC82A5CFCE2C4563E4CFBAA /* JourneyTests */,
 				60FC818B7BC5C402FAE4A111 /* JourneyTests */,
+				2AC82A5CFCE2C4563E4CFBAA /* JourneyTests */,
 				9B5C796A6E8ED20C2B83D487 /* JourneyUITests */,
 				C7DF22EEE90DD17C219C3A5D /* Products */,
 			);

@@ -30,6 +30,22 @@ struct WebsiteSection: View {
         entries.filter { $0.publishStatus != .notPublished && $0.publishDestinationID == nil }.count
     }
 
+    /// The address published work is actually bound to, which is not
+    /// necessarily the one in the field: changing the app's default address
+    /// re-points a install that never saved one explicitly.
+    private var boundDestination: PublishDestination? {
+        let boundIDs = Set(entries.compactMap(\.publishDestinationID) + operations.map(\.destinationID))
+        return destinations.first { boundIDs.contains($0.id) }
+    }
+
+    /// True when published entries point at a different address from the one
+    /// the app would now use. Until it is resolved the outbox cannot match a
+    /// destination, so pending work waits without saying so.
+    private var needsMove: Bool {
+        guard let bound = boundDestination, let url = JourneyAPI.websiteURL(website) else { return false }
+        return bound.baseURL != JourneyAPI(baseURL: url, key: "").destinationURL
+    }
+
     var body: some View {
         Section {
             TextField("Website", text: $website)
@@ -41,17 +57,15 @@ struct WebsiteSection: View {
                     moveError = nil
                 }
                 .disabled(hasBindings && !hasKey)
-            if website != savedWebsite {
-                if hasBindings {
-                    // The same website under a new name: repoint published work
-                    // instead of demanding it all be unpublished first, which
-                    // would delete its photos and readers' comments.
-                    Button(isMoving ? "Moving…" : "Move to This Address", action: moveWebsite)
-                        .disabled(!isWebsiteValid || isMoving)
-                } else {
-                    Button("Save Website", action: saveWebsite)
-                        .disabled(!isWebsiteValid)
-                }
+            if needsMove {
+                // The same website under a new name: repoint published work
+                // instead of demanding it all be unpublished first, which
+                // would delete its photos and readers' comments.
+                Button(isMoving ? "Moving…" : "Move Published Entries Here", action: moveWebsite)
+                    .disabled(!isWebsiteValid || isMoving || !hasKey)
+            } else if website != savedWebsite {
+                Button("Save Website", action: saveWebsite)
+                    .disabled(!isWebsiteValid || hasBindings)
             }
             if let moveError {
                 Text(moveError).foregroundStyle(.red)
@@ -99,6 +113,10 @@ struct WebsiteSection: View {
     private var footer: some View {
         if !isWebsiteValid {
             Text("Use an https:// address.").foregroundStyle(.red)
+        } else if needsMove, let bound = boundDestination {
+            // Say it plainly: until this is resolved the outbox cannot match a
+            // destination, so publishing waits and nothing else explains why.
+            Text("\(bindingCount == 1 ? "1 published entry is" : "\(bindingCount) published entries are") still connected to \(bound.baseURL). Journey can't publish or update until they point here. Moving them keeps everything online — their photos and readers' comments stay exactly as they are.")
         } else if hasBindings {
             Text("This destination is locked while \(bindingCount == 1 ? "1 entry is" : "\(bindingCount) entries are") published or publishing. \(hasKey ? "Unpublish them and let pending removals finish before replacing the website or owner key." : "Restore the original owner key so Journey can finish or unpublish them.")")
         } else if legacyUnboundCount > 0 {

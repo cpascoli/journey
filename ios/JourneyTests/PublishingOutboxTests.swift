@@ -498,6 +498,124 @@ final class PublishingOutboxTests: XCTestCase {
         XCTAssertEqual(try container.mainContext.fetch(FetchDescriptor<PublishOperation>()).count, 1)
     }
 
+
+    // MARK: Moving to a new address
+
+    /// Renaming the website must not require unpublishing, which would delete
+    /// entries along with their media and readers' comments.
+    func testMoveRebindsPublishedEntriesToTheNewAddress() async throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let entry = try makeEntry(in: context)
+        let publisher = Publisher(context: context)
+        let old = makeAPI()
+
+        let published = try await Publisher.payload(for: entry, mediaKeys: []).addingContentHash()
+        let hash = try XCTUnwrap(published.clientContentHash)
+        TestURLProtocol.handler = { request in
+            if request.httpMethod == "PUT" {
+                return Self.response(request, status: 200, body: #"{"missing_media":[]}"#)
+            }
+            return Self.response(
+                request, status: 200,
+                body: #"{"entry":{"client_content_hash":"\#(hash)","media":[]}}"#
+            )
+        }
+        _ = try await publisher.publish(entry, with: old)
+        let boundID = try XCTUnwrap(entry.publishDestinationID)
+
+        let renamed = makeAPI(baseURL: "https://ashone.example")
+        try await publisher.moveDestination(to: renamed)
+
+        let destination = try XCTUnwrap(
+            context.fetch(FetchDescriptor<PublishDestination>()).first { $0.id == boundID }
+        )
+        XCTAssertEqual(destination.baseURL, "https://ashone.example")
+        // The entry stays bound to the same destination row, still published.
+        XCTAssertEqual(entry.publishDestinationID, boundID)
+        XCTAssertNotNil(entry.publishedAt)
+    }
+
+    /// An address that does not already hold this journal must be refused,
+    /// or a typo would silently orphan everything published.
+    func testMoveRefusesAnAddressThatDoesNotKnowTheEntry() async throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let entry = try makeEntry(in: context)
+        let publisher = Publisher(context: context)
+
+        let published = try await Publisher.payload(for: entry, mediaKeys: []).addingContentHash()
+        let hash = try XCTUnwrap(published.clientContentHash)
+        TestURLProtocol.handler = { request in
+            if request.httpMethod == "PUT" {
+                return Self.response(request, status: 200, body: #"{"missing_media":[]}"#)
+            }
+            return Self.response(
+                request, status: 200,
+                body: #"{"entry":{"client_content_hash":"\#(hash)","media":[]}}"#
+            )
+        }
+        _ = try await publisher.publish(entry, with: makeAPI())
+        let boundID = try XCTUnwrap(entry.publishDestinationID)
+
+        // The new address has never heard of this entry.
+        TestURLProtocol.handler = { request in
+            Self.response(request, status: 404, body: #"{"error":{"code":"UNKNOWN_ENTRY","message":"Missing"}}"#)
+        }
+        do {
+            try await publisher.moveDestination(to: makeAPI(baseURL: "https://wrong.example"))
+            XCTFail("a move to an unrelated address should fail")
+        } catch let error as PublishingError {
+            XCTAssertEqual(error, .notTheSameWebsite)
+        }
+
+        let destination = try XCTUnwrap(
+            context.fetch(FetchDescriptor<PublishDestination>()).first { $0.id == boundID }
+        )
+        XCTAssertEqual(destination.baseURL, "https://journal.example", "the binding must be left alone")
+    }
+
+    /// A different owner key means a different destination, not a rename.
+    func testMoveRefusesADifferentOwnerKey() async throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let entry = try makeEntry(in: context)
+        let publisher = Publisher(context: context)
+
+        let published = try await Publisher.payload(for: entry, mediaKeys: []).addingContentHash()
+        let hash = try XCTUnwrap(published.clientContentHash)
+        TestURLProtocol.handler = { request in
+            if request.httpMethod == "PUT" {
+                return Self.response(request, status: 200, body: #"{"missing_media":[]}"#)
+            }
+            return Self.response(
+                request, status: 200,
+                body: #"{"entry":{"client_content_hash":"\#(hash)","media":[]}}"#
+            )
+        }
+        _ = try await publisher.publish(entry, with: makeAPI())
+
+        do {
+            try await publisher.moveDestination(
+                to: makeAPI(baseURL: "https://ashone.example", key: String(repeating: "z", count: 32))
+            )
+            XCTFail("a move with a different key should fail")
+        } catch let error as PublishingError {
+            XCTAssertEqual(error, .differentDestination)
+        }
+    }
+
+    func testMoveWithNothingPublishedReportsSo() async throws {
+        let container = try makeContainer()
+        let publisher = Publisher(context: container.mainContext)
+        do {
+            try await publisher.moveDestination(to: makeAPI(baseURL: "https://ashone.example"))
+            XCTFail("there is nothing to move")
+        } catch let error as PublishingError {
+            XCTAssertEqual(error, .nothingToMove)
+        }
+    }
+
     private func makeContainer() throws -> ModelContainer {
         try ModelContainer(
             for: Schema(versionedSchema: JourneySchemaV7.self),
@@ -526,12 +644,15 @@ final class PublishingOutboxTests: XCTestCase {
         return entry
     }
 
-    private func makeAPI() -> JourneyAPI {
+    private func makeAPI(
+        baseURL: String = "https://journal.example",
+        key: String = String(repeating: "k", count: 32)
+    ) -> JourneyAPI {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [TestURLProtocol.self]
         return JourneyAPI(
-            baseURL: URL(string: "https://journal.example")!,
-            key: String(repeating: "k", count: 32),
+            baseURL: URL(string: baseURL)!,
+            key: key,
             session: URLSession(configuration: configuration)
         )
     }

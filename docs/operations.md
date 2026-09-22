@@ -112,8 +112,8 @@ owner-key fingerprint. It blocks changing either while bindings remain.
   rebinding, so it cannot be pointed at a different journal. Nothing on the
   website changes. Do not unpublish first: that deletes entries, and their
   media and readers' comments cascade with them.
-  Afterwards, replace each invitation's link (Settings → Sharing →
-  Invitations → the invitation → Replace Link) so readers are on the new host;
+  Afterwards, replace each invitation's link (Sharing → Invitations →
+  the invitation → Replace Link) so readers are on the new host;
   links already shared keep working through the redirect in `netlify.toml`.
 - Move to a different server or key: keep the old destination/key available,
   unpublish all entries, wait until the outbox is empty, change the

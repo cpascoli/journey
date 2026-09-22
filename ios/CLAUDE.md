@@ -65,9 +65,10 @@ xcodebuild test -project Journey.xcodeproj -scheme Journey \
   the website's sharing rules — read `../CLAUDE.md` before changing how they're
   stored or deleted. In the app, a tag that's in use can't be deleted, and
   tags are referenced by `id`, so renames are safe.
-- Three tabs: **Write** (`DayView` + `EntryEditorView`, edit mode),
-  **Calendar** (`CalendarView` → `JournalPageView` → `MediaViewer`, read mode)
-  and **Settings** (journal selection, dictation language, permissions). The
+- Four tabs: **Write** (`DayView` + `EntryEditorView`, edit mode),
+  **Calendar** (`CalendarView` → `JournalPageView` → `MediaViewer`, read mode),
+  **Sharing** (`SharingView` → invitations and reader comments) and
+  **Settings** (journal selection, dictation language, permissions). The
   active journal shows as a navigation subtitle once there's more than one.
   Write must stay the first tab; `DemoWalkthrough` expects to land on it.
   Calendar scales zoom in by tapping (year → month, week/month → day page).
@@ -138,12 +139,15 @@ xcodebuild test -project Journey.xcodeproj -scheme Journey \
 - `PublishSheet` saves visibility and location precision only when *Publish*
   is tapped: a wider audience never takes effect implicitly. Precision
   `hidden` sends no location at all.
+- Sharing lives in its own tab, not in Settings: it is used regularly, while
+  settings are set once. `DemoWalkthrough` taps tabs by label, so tab order
+  can change, but Write must stay first.
 - `InviteManagementView` lists invitations; tapping one opens its detail, where
   the allowed tags are saved as a whole set and the link can be replaced. Tag
   edits are not applied until *Save*, so widening access is always deliberate,
   and the row shows how many entries the invitation actually reads (from the
   website — the all-tags rule is too easy to misjudge by hand).
-- `CommentsView` lists reader conversations (Settings → Sharing → Comments).
+- `CommentsView` lists reader conversations (Sharing → Comments).
   Each is private to one invitation, so one entry can show several threads;
   opening a thread is what marks it read. Only the owner can delete a comment.
 - A published entry, or a journal holding one, can't be deleted in the app:

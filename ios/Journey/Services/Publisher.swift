@@ -106,17 +106,14 @@ final class Publisher {
         }
         guard destination.baseURL != api.destinationURL else { return }
 
-        // The proof: the same entry, with the same content, at the new address.
-        let cache = try? metadataCache(for: sample.id)
-        let expected = try await Self.payload(
-            for: sample,
-            mediaKeys: (cache?.confirmedMediaKeys ?? []),
-            locationCache: cache
-        ).addingContentHash().clientContentHash
-        guard let remote = try await api.entryState(id: sample.id) else {
-            throw PublishingError.notTheSameWebsite
-        }
-        guard expected == nil || remote.clientContentHash == expected else {
+        // The proof that this is the same journal: the new address already
+        // knows an entry this app published, and accepted the same owner key
+        // to say so. Entry ids are generated on the phone, so another journal
+        // holding this one is not a case worth designing around.
+        //
+        // Deliberately not comparing content hashes: a local cache can be
+        // legitimately stale, and that would block a move that is correct.
+        guard try await api.entryState(id: sample.id) != nil else {
             throw PublishingError.notTheSameWebsite
         }
 

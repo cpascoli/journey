@@ -81,6 +81,11 @@ struct RootView: View {
                             .journalSubtitle(subtitle)
                     }
                 }
+                Tab("Sharing", systemImage: "person.2", value: RootTab.sharing) {
+                    NavigationStack {
+                        SharingView()
+                    }
+                }
                 Tab("Settings", systemImage: "gearshape", value: RootTab.settings) {
                     NavigationStack {
                         SettingsView(journals: journals, current: journal, selectedID: $selectedJournalID)
@@ -103,7 +108,7 @@ struct RootView: View {
 }
 
 private enum RootTab {
-    case write, calendar, settings
+    case write, calendar, sharing, settings
 }
 
 private extension View {

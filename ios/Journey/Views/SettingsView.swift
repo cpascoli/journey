@@ -73,19 +73,6 @@ struct SettingsView: View {
 
             WebsiteSection()
 
-            Section("Sharing") {
-                NavigationLink {
-                    InviteManagementView()
-                } label: {
-                    Label("Invitations", systemImage: "person.2")
-                }
-                NavigationLink {
-                    CommentsView()
-                } label: {
-                    Label("Comments", systemImage: "bubble.left.and.bubble.right")
-                }
-            }
-
             Section("Dictation") {
                 Picker("Language", selection: $dictationLanguage) {
                     ForEach(EntryTranslator.languages, id: \.code) { language in
