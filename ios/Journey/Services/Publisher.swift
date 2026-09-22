@@ -80,6 +80,50 @@ final class Publisher {
         }
     }
 
+    /// Repoints published work at the same website under a new address.
+    ///
+    /// A destination is identified by its URL and key fingerprint, so renaming
+    /// the site would otherwise orphan every published entry — and the only
+    /// alternative, unpublishing them all, deletes their photos and readers'
+    /// comments. This proves the new address serves the same database before
+    /// rebinding: it reads a bound entry back and requires the content hash to
+    /// match. Nothing on the website changes; only where the app looks for it.
+    func moveDestination(to api: JourneyAPI) async throws {
+        let bound = try context.fetch(FetchDescriptor<Entry>()).filter {
+            $0.publishDestinationID != nil
+        }
+        guard let sample = bound.first, let destinationID = sample.publishDestinationID else {
+            throw PublishingError.nothingToMove
+        }
+        let descriptor = FetchDescriptor<PublishDestination>(
+            predicate: #Predicate { $0.id == destinationID }
+        )
+        guard let destination = try context.fetch(descriptor).first else {
+            throw PublishingError.nothingToMove
+        }
+        guard destination.keyFingerprint == api.keyFingerprint else {
+            throw PublishingError.differentDestination
+        }
+        guard destination.baseURL != api.destinationURL else { return }
+
+        // The proof: the same entry, with the same content, at the new address.
+        let cache = try? metadataCache(for: sample.id)
+        let expected = try await Self.payload(
+            for: sample,
+            mediaKeys: (cache?.confirmedMediaKeys ?? []),
+            locationCache: cache
+        ).addingContentHash().clientContentHash
+        guard let remote = try await api.entryState(id: sample.id) else {
+            throw PublishingError.notTheSameWebsite
+        }
+        guard expected == nil || remote.clientContentHash == expected else {
+            throw PublishingError.notTheSameWebsite
+        }
+
+        destination.baseURL = api.destinationURL
+        try context.save()
+    }
+
     /// Commits destination binding and publish intent before the first request.
     func publish(_ entry: Entry, with api: JourneyAPI) async throws -> Report {
         try await ensureLegacyBinding(entry, to: api)
@@ -660,6 +704,8 @@ final class Publisher {
 
 nonisolated enum PublishingError: LocalizedError {
     case differentDestination
+    case nothingToMove
+    case notTheSameWebsite
     case photosNotConfirmed
     case removalNotConfirmed
     case remoteEntryNotFound
@@ -668,6 +714,10 @@ nonisolated enum PublishingError: LocalizedError {
         switch self {
         case .differentDestination:
             "This entry is bound to its original website. Unpublish it there before changing destinations."
+        case .nothingToMove:
+            "There is nothing published to move."
+        case .notTheSameWebsite:
+            "That address did not return the journal Journey already published. Check it serves the same website before moving."
         case .photosNotConfirmed:
             "The website has not confirmed every photo yet. Journey will retry."
         case .removalNotConfirmed:

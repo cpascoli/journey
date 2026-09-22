@@ -8,7 +8,10 @@ struct WebsiteSection: View {
     @State private var isEnteringKey = false
     @State private var keyText = ""
     @State private var isChecking = false
+    @State private var isMoving = false
+    @State private var moveError: String?
     @State private var check: Result<Int, Error>?
+    @Environment(Publisher.self) private var publisher
     @Query private var entries: [Entry]
     @Query private var operations: [PublishOperation]
     @Query private var destinations: [PublishDestination]
@@ -33,11 +36,25 @@ struct WebsiteSection: View {
                 .keyboardType(.URL)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-                .onChange(of: website) { check = nil }
-                .disabled(hasBindings)
+                .onChange(of: website) {
+                    check = nil
+                    moveError = nil
+                }
+                .disabled(hasBindings && !hasKey)
             if website != savedWebsite {
-                Button("Save Website", action: saveWebsite)
-                    .disabled(!isWebsiteValid || hasBindings)
+                if hasBindings {
+                    // The same website under a new name: repoint published work
+                    // instead of demanding it all be unpublished first, which
+                    // would delete its photos and readers' comments.
+                    Button(isMoving ? "Moving…" : "Move to This Address", action: moveWebsite)
+                        .disabled(!isWebsiteValid || isMoving)
+                } else {
+                    Button("Save Website", action: saveWebsite)
+                        .disabled(!isWebsiteValid)
+                }
+            }
+            if let moveError {
+                Text(moveError).foregroundStyle(.red)
             }
             if hasKey {
                 LabeledContent("Owner Key", value: "Saved")
@@ -139,6 +156,24 @@ struct WebsiteSection: View {
             check = nil
         } else {
             check = .failure(APIError(status: 0, code: "KEYCHAIN_REMOVE", message: "The owner key could not be removed. Try again."))
+        }
+    }
+
+    /// Repoints published work at the same website under its new address.
+    private func moveWebsite() {
+        guard let url = JourneyAPI.websiteURL(website),
+              let key = Keychain.string(for: JourneyAPI.keyAccount) else { return }
+        isMoving = true
+        moveError = nil
+        Task {
+            do {
+                try await publisher.moveDestination(to: JourneyAPI(baseURL: url, key: key))
+                UserDefaults.standard.set(website, forKey: JourneyAPI.websiteKey)
+                check = nil
+            } catch {
+                moveError = error.localizedDescription
+            }
+            isMoving = false
         }
     }
 

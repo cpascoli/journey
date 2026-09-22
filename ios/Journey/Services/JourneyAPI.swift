@@ -4,7 +4,7 @@ import Foundation
 /// The website's owner API, which the app publishes through with the owner key.
 /// The contract is `web/src/lib/api/owner-openapi.ts`: change both together.
 struct JourneyAPI {
-    static let defaultWebsite = "https://journey-web.netlify.app"
+    static let defaultWebsite = "https://ashone.me"
     /// UserDefaults key for the website address; the owner key itself lives in the Keychain.
     static let websiteKey = "websiteURL"
     static let keyAccount = "owner-api-key"
