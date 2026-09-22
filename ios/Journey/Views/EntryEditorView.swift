@@ -218,9 +218,11 @@ struct EntryEditorView: View {
     private var mediaSection: some View {
         Section("Photos & videos") {
             if !draft.assetIDs.isEmpty {
-                AssetGrid(ids: draft.assetIDs) { id in
-                    draft.assetIDs.removeAll { $0 == id }
-                }
+                AssetGrid(
+                    ids: draft.assetIDs,
+                    onRemove: { id in draft.assetIDs.removeAll { $0 == id } },
+                    onReorder: { draft.assetIDs = $0 }
+                )
             }
             Button {
                 isPickingDayPhotos = true
