@@ -40,8 +40,10 @@ export default async function ReaderEntryPage({ params }: Params) {
           {entry.place_name ? ` · ${entry.place_name}` : ""}
         </p>
         <h1>{title || strings.untitledEntry}</h1>
-        <MediaGrid entryId={entry.id} language={language} media={entry.media} />
+        {/* The story first: on a full entry the writing is the point, and a
+            grid of photos above it pushed it off the screen. */}
         {text && <div className="entry-text">{text}</div>}
+        <MediaGrid entryId={entry.id} language={language} media={entry.media} />
       </article>
       <CommentThread comments={comments} entryId={entry.id} language={language} />
     </main>
