@@ -106,6 +106,48 @@ struct JourneyAPI {
         return try Self.decoder.decode(InviteLinkResponse.self, from: data).url
     }
 
+    // MARK: Comments
+
+    /// Every reader conversation, newest activity first. Threads are private
+    /// to their invitation, so one entry can hold several.
+    func commentThreads() async throws -> [RemoteCommentThread] {
+        let data = try await send("GET", "api/v1/owner/comments")
+        return try Self.decoder.decode(CommentThreadsResponse.self, from: data).threads
+    }
+
+    func comments(entryID: UUID, inviteID: UUID) async throws -> [RemoteComment] {
+        let data = try await send(
+            "GET", "api/v1/owner/entries/\(entryID.uuidString.lowercased())/comments",
+            query: [URLQueryItem(name: "invite", value: inviteID.uuidString.lowercased())]
+        )
+        return try Self.decoder.decode(CommentsResponse.self, from: data).comments
+    }
+
+    func replyToComment(entryID: UUID, inviteID: UUID, body: String) async throws {
+        let payload = try Self.encoder.encode(
+            CommentReplyPayload(inviteId: inviteID.uuidString.lowercased(), body: body)
+        )
+        _ = try await send(
+            "POST", "api/v1/owner/entries/\(entryID.uuidString.lowercased())/comments",
+            body: payload, contentType: "application/json"
+        )
+    }
+
+    /// Clears the unread count once the thread has actually been read.
+    func markCommentsSeen(entryID: UUID, inviteID: UUID) async throws {
+        let payload = try Self.encoder.encode(
+            SeenPayload(inviteId: inviteID.uuidString.lowercased())
+        )
+        _ = try await send(
+            "PATCH", "api/v1/owner/entries/\(entryID.uuidString.lowercased())/comments",
+            body: payload, contentType: "application/json"
+        )
+    }
+
+    func deleteComment(id: UUID) async throws {
+        _ = try await send("DELETE", "api/v1/owner/comments/\(id.uuidString.lowercased())")
+    }
+
     func putPhoto(entryID: UUID, key mediaKey: String, _ photo: PhotoExport.Photo, takenAt: Date?, sortOrder: Int) async throws {
         var query = [
             URLQueryItem(name: "width", value: String(photo.width)),
@@ -333,6 +375,48 @@ nonisolated struct RemoteInvite: Decodable, Identifiable, Sendable {
 nonisolated struct CreatedInvite: Decodable, Sendable {
     let invite: RemoteInvite
     let url: URL
+}
+
+nonisolated struct RemoteCommentThread: Decodable, Identifiable, Sendable {
+    let entryId: UUID
+    let entryTitle: String
+    let entryDay: String
+    let inviteId: UUID
+    let inviteName: String
+    let inviteRevoked: Bool
+    let commentCount: Int
+    let unseenCount: Int
+    let lastAt: String
+
+    /// One conversation per invitation per entry.
+    var id: String { "\(entryId):\(inviteId)" }
+}
+
+nonisolated struct RemoteComment: Decodable, Identifiable, Sendable {
+    let id: UUID
+    let author: String
+    let body: String
+    let createdAt: String
+
+    var isOwner: Bool { author == "owner" }
+}
+
+private nonisolated struct CommentThreadsResponse: Decodable {
+    let threads: [RemoteCommentThread]
+    let unseenTotal: Int
+}
+
+private nonisolated struct CommentsResponse: Decodable {
+    let comments: [RemoteComment]
+}
+
+private nonisolated struct CommentReplyPayload: Encodable {
+    let inviteId: String
+    let body: String
+}
+
+private nonisolated struct SeenPayload: Encodable {
+    let inviteId: String
 }
 
 private nonisolated struct InviteTagsPayload: Encodable {

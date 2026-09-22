@@ -143,6 +143,9 @@ xcodebuild test -project Journey.xcodeproj -scheme Journey \
   edits are not applied until *Save*, so widening access is always deliberate,
   and the row shows how many entries the invitation actually reads (from the
   website — the all-tags rule is too easy to misjudge by hand).
+- `CommentsView` lists reader conversations (Settings → Sharing → Comments).
+  Each is private to one invitation, so one entry can show several threads;
+  opening a thread is what marks it read. Only the owner can delete a comment.
 - A published entry, or a journal holding one, can't be deleted in the app:
   unpublish first, or it would stay online. Tag renames reach the website at
   the next publish of an entry that uses the tag.

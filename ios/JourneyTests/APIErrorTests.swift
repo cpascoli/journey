@@ -48,3 +48,59 @@ final class APIErrorTests: XCTestCase {
         XCTAssertEqual(broken.errorDescription, "The website answered with status 502.")
     }
 }
+
+final class CommentSummaryTests: XCTestCase {
+    private func thread(
+        name: String = "Family",
+        count: Int = 3,
+        unseen: Int = 0,
+        revoked: Bool = false
+    ) throws -> RemoteCommentThread {
+        let json = """
+        {"entry_id":"\(UUID().uuidString.lowercased())","entry_title":"A day",
+         "entry_day":"2026-09-20","invite_id":"\(UUID().uuidString.lowercased())",
+         "invite_name":"\(name)","invite_revoked":\(revoked),
+         "comment_count":\(count),"unseen_count":\(unseen),"last_at":"2026-09-20T10:00:00Z"}
+        """
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(RemoteCommentThread.self, from: Data(json.utf8))
+    }
+
+    func testNamesTheInvitationAndCountsTheComments() throws {
+        XCTAssertEqual(CommentSummary.text(thread: try thread()), "Family · 3 comments")
+    }
+
+    func testCountsOneCommentInTheSingular() throws {
+        XCTAssertEqual(CommentSummary.text(thread: try thread(count: 1)), "Family · 1 comment")
+    }
+
+    /// A revoked invitation can no longer read replies, so the row says so.
+    func testShowsWhenTheInvitationIsRevoked() throws {
+        XCTAssertEqual(
+            CommentSummary.text(thread: try thread(count: 2, revoked: true)),
+            "Family · 2 comments · revoked"
+        )
+    }
+
+    /// Threads are keyed per invitation per entry, so two invitations
+    /// commenting on one entry must not collapse into a single row.
+    func testThreadsOnOneEntryHaveDistinctIdentities() throws {
+        let first = try thread(name: "Alice")
+        let second = try thread(name: "Bob")
+        XCTAssertNotEqual(first.id, second.id)
+    }
+
+    func testAuthorDecidesWhichSideAReplyIsShownOn() throws {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let owner = try decoder.decode(RemoteComment.self, from: Data("""
+        {"id":"\(UUID().uuidString.lowercased())","author":"owner","body":"Thanks!","created_at":"2026-09-20T10:00:00Z"}
+        """.utf8))
+        let reader = try decoder.decode(RemoteComment.self, from: Data("""
+        {"id":"\(UUID().uuidString.lowercased())","author":"reader","body":"Lovely","created_at":"2026-09-20T10:00:00Z"}
+        """.utf8))
+        XCTAssertTrue(owner.isOwner)
+        XCTAssertFalse(reader.isOwner)
+    }
+}

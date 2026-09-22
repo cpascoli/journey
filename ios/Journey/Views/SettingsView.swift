@@ -79,6 +79,11 @@ struct SettingsView: View {
                 } label: {
                     Label("Invitations", systemImage: "person.2")
                 }
+                NavigationLink {
+                    CommentsView()
+                } label: {
+                    Label("Comments", systemImage: "bubble.left.and.bubble.right")
+                }
             }
 
             Section("Dictation") {
