@@ -253,6 +253,7 @@ private struct InviteDetailView: View {
     }
 
     private var isRevoked: Bool { invite.revokedAt != nil }
+    private var hasAPI: Bool { JourneyAPI.configured() != nil }
     private var hasChanges: Bool { selected != Set(invite.tagIds) }
 
     var body: some View {
@@ -268,15 +269,29 @@ private struct InviteDetailView: View {
                 )
             }
 
-            if let replacedURL {
-                Section {
+            // Always here, so sharing is never a thing you have to go and
+            // find. Journey holds no link until one is made: the website
+            // stores only a hash, so there is nothing to show again.
+            Section {
+                if let replacedURL {
                     ShareLink(item: replacedURL, subject: Text("Journey invitation")) {
-                        Label("Share New Link", systemImage: "square.and.arrow.up")
+                        Label("Share Invitation Link", systemImage: "square.and.arrow.up")
                     }
-                } header: {
-                    Text("New Link")
-                } footer: {
-                    Text("Share this now. Journey does not save it and the website cannot show it again. The previous link has stopped working.")
+                } else if !isRevoked {
+                    Button(isReplacing ? "Creating…" : "Create a Link to Share", systemImage: "link") {
+                        isConfirmingReplace = true
+                    }
+                    .disabled(isReplacing || !hasAPI)
+                }
+            } header: {
+                Text("Invitation Link")
+            } footer: {
+                if replacedURL != nil {
+                    Text("Share this now. Journey does not save it and the website cannot show it again. Any previous link has stopped working.")
+                } else if isRevoked {
+                    Text("This invitation is revoked, so it has no link. Create a new invitation instead.")
+                } else {
+                    Text("Journey does not keep invitation links, and the website cannot show one again — it stores only a hash. Creating a link to share stops the current one working.")
                 }
             }
 
@@ -300,17 +315,6 @@ private struct InviteDetailView: View {
                     : "It reads an entry only when it has every one of that entry's tags.")
             }
 
-            if !isRevoked {
-                Section {
-                    Button(isReplacing ? "Replacing…" : "Replace Link") {
-                        isConfirmingReplace = true
-                    }
-                    .disabled(isReplacing)
-                } footer: {
-                    Text("Use this if the link was lost before you sent it. The old link stops working straight away.")
-                }
-            }
-
             if let errorMessage {
                 Section { Text(errorMessage).foregroundStyle(.red) }
             }
@@ -324,14 +328,14 @@ private struct InviteDetailView: View {
             }
         }
         .confirmationDialog(
-            "Replace this invitation's link?",
+            "Create a new link for this invitation?",
             isPresented: $isConfirmingReplace,
             titleVisibility: .visible
         ) {
-            Button("Replace Link", role: .destructive) { replaceLink() }
+            Button("Create New Link", role: .destructive) { replaceLink() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Anyone holding the current link loses access immediately.")
+            Text("\(invite.name) keeps their name and tags, but anyone holding the current link loses access immediately.")
         }
     }
 

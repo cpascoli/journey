@@ -147,6 +147,11 @@ xcodebuild test -project Journey.xcodeproj -scheme Journey \
 - Sharing lives in its own tab, not in Settings: it is used regularly, while
   settings are set once. `DemoWalkthrough` taps tabs by label, so tab order
   can change, but Write must stay first.
+- The invite detail always offers a share affordance: the link itself when one
+  has just been made, otherwise a button that makes one. Journey keeps no
+  link — the website stores only a hash — so sharing an existing invitation
+  means issuing a new link, and the old one stops working. The wording says
+  so rather than letting it surprise.
 - `InviteManagementView` lists invitations; tapping one opens its detail, where
   the allowed tags are saved as a whole set and the link can be replaced. Tag
   edits are not applied until *Save*, so widening access is always deliberate,
