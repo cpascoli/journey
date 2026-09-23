@@ -106,3 +106,29 @@ final class ThumbnailContractTests: XCTestCase {
         XCTAssertEqual(state.keysWithoutThumbnail, ["missing", "older"])
     }
 }
+
+final class AssetRowLengthTests: XCTestCase {
+    func testWritesAClipLengthTheUsualWay() {
+        XCTAssertEqual(AssetRow.length(0), "0:00")
+        XCTAssertEqual(AssetRow.length(9), "0:09")
+        XCTAssertEqual(AssetRow.length(65), "1:05")
+        XCTAssertEqual(AssetRow.length(600), "10:00")
+    }
+
+    func testRoundsToTheNearestSecondRatherThanTruncating() {
+        XCTAssertEqual(AssetRow.length(59.6), "1:00")
+        XCTAssertEqual(AssetRow.length(89.4), "1:29")
+    }
+
+    /// A duration should never read as negative, whatever Photos reports.
+    func testNeverShowsANegativeLength() {
+        XCTAssertEqual(AssetRow.length(-5), "0:00")
+    }
+
+    /// The row warns using the same limit the export enforces, so what it
+    /// says and what happens cannot drift apart.
+    func testTheWarningThresholdIsTheExportLimit() {
+        XCTAssertEqual(VideoExport.maxDuration, 90)
+        XCTAssertEqual(AssetRow.length(VideoExport.maxDuration), "1:30")
+    }
+}

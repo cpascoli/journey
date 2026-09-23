@@ -75,6 +75,8 @@ struct EntryEditorView: View {
     @State private var draft: EntryDraft
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var isPickingDayPhotos = false
+    /// The item being looked at full screen, if any.
+    @State private var preview: MediaViewerRequest?
     @State private var isDrafting = false
     @State private var draftError: String?
     @State private var saveError: String?
@@ -119,6 +121,9 @@ struct EntryEditorView: View {
             }
             .navigationTitle(draft.entry == nil ? "New Entry" : "Edit Entry")
             .navigationBarTitleDisplayMode(.inline)
+            .fullScreenCover(item: $preview) { request in
+                MediaViewer(ids: request.ids, start: request.start)
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -222,6 +227,12 @@ struct EntryEditorView: View {
             // the order published, and the first photo leads the entry.
             ForEach(draft.assetIDs, id: \.self) { id in
                 AssetRow(localIdentifier: id)
+                    // Tapping opens it full screen, so what is attached can be
+                    // checked before publishing rather than after.
+                    .contentShape(.rect)
+                    .onTapGesture {
+                        preview = MediaViewerRequest(ids: draft.assetIDs, start: id)
+                    }
             }
             .onDelete { offsets in
                 draft.assetIDs.remove(atOffsets: offsets)
@@ -253,10 +264,18 @@ struct EntryEditorView: View {
                 }
             }
         } footer: {
-            if draft.assetIDs.count > 1 {
-                Text("Swipe a row to remove it. Tap Edit to drag them into the order they appear in.")
+            if !draft.assetIDs.isEmpty {
+                Text(mediaFooter)
             }
         }
+    }
+
+    private var mediaFooter: String {
+        var parts = ["Tap one to see it full screen."]
+        if draft.assetIDs.count > 1 {
+            parts.append("Swipe a row to remove it, or tap Edit to drag them into order.")
+        }
+        return parts.joined(separator: " ")
     }
 
     private var storySection: some View {

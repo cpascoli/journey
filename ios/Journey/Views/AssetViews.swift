@@ -53,7 +53,8 @@ struct AssetStrip: View {
     }
 }
 
-/// One attached photo or video, as a row: a thumbnail and what it is.
+/// One attached photo or video, as a row: a thumbnail, what it is, and
+/// whether it can be published.
 ///
 /// A row rather than a tile so the editor can use the list behaviour people
 /// already know — swipe to delete, drag the handle to reorder — instead of a
@@ -62,28 +63,53 @@ struct AssetRow: View {
     let localIdentifier: String
 
     @State private var caption = "Photo"
+    /// Set when the item stays on the phone: the entry keeps it either way,
+    /// so saying why is more use than quietly dropping it from the list.
+    @State private var unpublishable: String?
 
     var body: some View {
         HStack(spacing: 12) {
             AssetThumbnail(localIdentifier: localIdentifier, size: 44)
-            Text(caption)
-                .font(.subheadline)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(caption)
+                    .font(.subheadline)
+                if let unpublishable {
+                    Label(unpublishable, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+            }
             Spacer(minLength: 0)
         }
-        .task(id: localIdentifier) {
-            guard let asset = PHAsset.fetchAssets(
-                withLocalIdentifiers: [localIdentifier], options: nil
-            ).firstObject else {
-                // Still listed, but no longer in the library.
-                caption = "Unavailable"
-                return
-            }
-            let kind = asset.mediaType == .video ? "Video" : "Photo"
-            guard let taken = asset.creationDate else {
-                caption = kind
-                return
-            }
-            caption = "\(kind) · \(taken.formatted(date: .omitted, time: .shortened))"
+        .task(id: localIdentifier) { await describe() }
+    }
+
+    private func describe() async {
+        guard let asset = PHAsset.fetchAssets(
+            withLocalIdentifiers: [localIdentifier], options: nil
+        ).firstObject else {
+            // Still listed, but no longer in the library.
+            caption = "Unavailable"
+            unpublishable = "Can't be read from your library"
+            return
         }
+
+        var parts = [asset.mediaType == .video ? "Video" : "Photo"]
+        if asset.mediaType == .video {
+            parts.append(Self.length(asset.duration))
+            if asset.duration > VideoExport.maxDuration {
+                unpublishable = "Too long to publish — stays on your iPhone"
+            }
+        }
+        if let taken = asset.creationDate {
+            parts.append(taken.formatted(date: .omitted, time: .shortened))
+        }
+        caption = parts.joined(separator: " · ")
+    }
+
+    /// "1:05", the way a clip's length is normally written.
+    static func length(_ seconds: TimeInterval) -> String {
+        let whole = max(0, Int(seconds.rounded()))
+        return String(format: "%d:%02d", whole / 60, whole % 60)
     }
 }
