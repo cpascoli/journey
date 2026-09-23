@@ -141,7 +141,7 @@ const it: Strings = {
     "Non dà più accesso al diario. Se pensi che sia un errore, chiedi un nuovo link a chi te l'ha condiviso.",
   entryUnavailable: "Voce non disponibile",
   entryUnavailableLede: "Questa voce non è disponibile con l'invito attuale.",
-  homeEyebrow: "Un diario di viaggio",
+  homeEyebrow: "Diario di viaggio",
   homeLede:
     "Luoghi, foto e le storie che li accompagnano — scritti in viaggio, e condivisi solo con chi è invitato a leggerli.",
   homeNote: "Se hai ricevuto un link d'invito, aprilo per iniziare a leggere.",
