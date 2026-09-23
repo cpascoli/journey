@@ -77,6 +77,8 @@ struct EntryEditorView: View {
     @State private var isPickingDayPhotos = false
     /// The item being looked at full screen, if any.
     @State private var preview: MediaViewerRequest?
+    /// The saved entry whose publish sheet is open.
+    @State private var publishing: Entry?
     @State private var isDrafting = false
     @State private var draftError: String?
     @State private var saveError: String?
@@ -118,11 +120,15 @@ struct EntryEditorView: View {
                 mediaSection
                 storySection
                 translationSection
+                publishSection
             }
             .navigationTitle(draft.entry == nil ? "New Entry" : "Edit Entry")
             .navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(item: $preview) { request in
                 MediaViewer(ids: request.ids, start: request.start)
+            }
+            .sheet(item: $publishing) { entry in
+                PublishSheet(entry: entry)
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -219,6 +225,29 @@ struct EntryEditorView: View {
             }
         }
     }
+
+    /// Publishing from where the writing happens, rather than only from the
+    /// calendar. The entry is saved first: the publish sheet works on what is
+    /// stored, so it must not be looking at a draft that has not been written.
+    private var publishSection: some View {
+        Section {
+            Button {
+                do {
+                    publishing = try save()
+                } catch {
+                    saveError = "Your entry could not be saved. \(error.localizedDescription)"
+                }
+            } label: {
+                Label(isPublished ? "Save & Update Website" : "Save & Publish…", systemImage: "globe")
+            }
+        } footer: {
+            Text(isPublished
+                ? "Saves this entry, then sends the changes to the website."
+                : "Saves this entry, then asks who may read it before anything goes online.")
+        }
+    }
+
+    private var isPublished: Bool { draft.entry?.isPublicationBound ?? false }
 
     private var mediaSection: some View {
         Section {
@@ -453,7 +482,8 @@ struct EntryEditorView: View {
         }
     }
 
-    private func save() throws {
+    @discardableResult
+    private func save() throws -> Entry {
         let entry: Entry
         if let existing = draft.entry {
             entry = existing
@@ -506,5 +536,6 @@ struct EntryEditorView: View {
                 }
             }
         }
+        return entry
     }
 }

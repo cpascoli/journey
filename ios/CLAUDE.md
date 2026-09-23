@@ -147,6 +147,10 @@ xcodebuild test -project Journey.xcodeproj -scheme Journey \
 - A video goes straight from the phone to the object store with a signed URL
   (`JourneyAPI.putVideo`), because a Netlify request body caps at 6 MB. The
   owner key is never sent to the store.
+- The editor can publish directly (`publishSection`), not only the journal
+  page's globe. It saves first and hands the stored `Entry` to `PublishSheet`,
+  which must never be given an unsaved draft — hence `save()` returning the
+  entry.
 - `PublishSheet` saves visibility and location precision only when *Publish*
   is tapped: a wider audience never takes effect implicitly. Precision
   `hidden` sends no location at all.
