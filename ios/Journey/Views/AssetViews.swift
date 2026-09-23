@@ -53,63 +53,37 @@ struct AssetStrip: View {
     }
 }
 
-struct AssetGrid: View {
-    let ids: [String]
-    let onRemove: (String) -> Void
-    /// Supplied where the order matters; omit it and the grid is not reorderable.
-    var onReorder: (([String]) -> Void)?
+/// One attached photo or video, as a row: a thumbnail and what it is.
+///
+/// A row rather than a tile so the editor can use the list behaviour people
+/// already know — swipe to delete, drag the handle to reorder — instead of a
+/// small overlay button that is easy to miss.
+struct AssetRow: View {
+    let localIdentifier: String
 
-    /// Which item is being dragged, so the rest can show where it would land.
-    @State private var dragging: String?
-
-    private var isReorderable: Bool { onReorder != nil && ids.count > 1 }
+    @State private var caption = "Photo"
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 80), spacing: 6)], spacing: 6) {
-            ForEach(ids, id: \.self) { id in
-                AssetThumbnail(localIdentifier: id, size: 80)
-                    .overlay(alignment: .topTrailing) {
-                        Button("Remove", systemImage: "xmark.circle.fill") { onRemove(id) }
-                            .labelStyle(.iconOnly)
-                            .foregroundStyle(.white, .black.opacity(0.6))
-                            .buttonStyle(.borderless)
-                            .padding(2)
-                    }
-                    .opacity(dragging == id ? 0.35 : 1)
-                    // A long press starts the drag, so this does not fight
-                    // the form's scrolling or the remove button's tap.
-                    .draggable(id) {
-                        AssetThumbnail(localIdentifier: id, size: 80)
-                            .clipShape(.rect(cornerRadius: 8))
-                    }
-                    .dropDestination(for: String.self) { dropped, _ in
-                        guard isReorderable, let moved = dropped.first, let onReorder else { return false }
-                        onReorder(MediaOrder.moving(moved, before: id, in: ids))
-                        dragging = nil
-                        return true
-                    } isTargeted: { targeted in
-                        if targeted { dragging = nil }
-                    }
+        HStack(spacing: 12) {
+            AssetThumbnail(localIdentifier: localIdentifier, size: 44)
+            Text(caption)
+                .font(.subheadline)
+            Spacer(minLength: 0)
+        }
+        .task(id: localIdentifier) {
+            guard let asset = PHAsset.fetchAssets(
+                withLocalIdentifiers: [localIdentifier], options: nil
+            ).firstObject else {
+                // Still listed, but no longer in the library.
+                caption = "Unavailable"
+                return
             }
-
-            if isReorderable {
-                // Dropping always inserts *before* something, so without a
-                // target past the last item nothing could be made last.
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(.secondary.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [4]))
-                    .frame(width: 80, height: 80)
-                    .overlay {
-                        Image(systemName: "arrow.turn.down.right")
-                            .foregroundStyle(.secondary)
-                            .accessibilityLabel("Move to the end")
-                    }
-                    .dropDestination(for: String.self) { dropped, _ in
-                        guard let moved = dropped.first, let onReorder else { return false }
-                        onReorder(MediaOrder.movingToEnd(moved, in: ids))
-                        dragging = nil
-                        return true
-                    }
+            let kind = asset.mediaType == .video ? "Video" : "Photo"
+            guard let taken = asset.creationDate else {
+                caption = kind
+                return
             }
+            caption = "\(kind) · \(taken.formatted(date: .omitted, time: .shortened))"
         }
     }
 }

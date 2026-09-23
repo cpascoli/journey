@@ -216,14 +216,20 @@ struct EntryEditorView: View {
     }
 
     private var mediaSection: some View {
-        Section("Photos & videos") {
-            if !draft.assetIDs.isEmpty {
-                AssetGrid(
-                    ids: draft.assetIDs,
-                    onRemove: { id in draft.assetIDs.removeAll { $0 == id } },
-                    onReorder: { draft.assetIDs = $0 }
-                )
+        Section {
+            // Ordinary list rows, so deleting and reordering work the way they
+            // do everywhere else: swipe to delete, Edit to drag. The order is
+            // the order published, and the first photo leads the entry.
+            ForEach(draft.assetIDs, id: \.self) { id in
+                AssetRow(localIdentifier: id)
             }
+            .onDelete { offsets in
+                draft.assetIDs.remove(atOffsets: offsets)
+            }
+            .onMove { source, destination in
+                draft.assetIDs.move(fromOffsets: source, toOffset: destination)
+            }
+
             Button {
                 isPickingDayPhotos = true
             } label: {
@@ -235,6 +241,20 @@ struct EntryEditorView: View {
                 photoLibrary: .shared()
             ) {
                 Label("Browse All Photos", systemImage: "photo.on.rectangle.angled")
+            }
+        } header: {
+            HStack {
+                Text("Photos & videos")
+                Spacer()
+                if !draft.assetIDs.isEmpty {
+                    EditButton()
+                        .font(.body)
+                        .textCase(nil)
+                }
+            }
+        } footer: {
+            if draft.assetIDs.count > 1 {
+                Text("Swipe a row to remove it. Tap Edit to drag them into the order they appear in.")
             }
         }
     }

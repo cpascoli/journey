@@ -62,10 +62,11 @@ xcodebuild test -project Journey.xcodeproj -scheme Journey \
   still there.
 - Media is never copied: entries store Photos `localIdentifier`s. Their order
   is the order of `mediaAssetIDs`, which the website turns into `sort_order`,
-  so reordering republishes without re-uploading. `AssetGrid` reorders by drag
-  and drop through `MediaOrder`; dropping inserts *before* the target, and the
-  trailing cell exists because otherwise no single move could make an item
-  last.
+  so reordering republishes without re-uploading. The editor lists them as
+  ordinary rows with `.onDelete` and `.onMove`, so removing and reordering
+  behave as they do in any list. An earlier drag-and-drop grid is gone: its
+  overlay delete button shared a view with a drag gesture, which made taps
+  unreliable.
 - Tags (`Tag`, many-to-many with `Entry`, shared across journals) are also
   the website's sharing rules — read `../CLAUDE.md` before changing how they're
   stored or deleted. In the app, a tag that's in use can't be deleted, and
