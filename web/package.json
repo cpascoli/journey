@@ -16,7 +16,8 @@
     "test:e2e:owner": "node scripts/owner-e2e.mjs",
     "test:e2e:reader": "node scripts/reader-e2e.mjs",
     "cleanup:media": "node scripts/reconcile-media-cleanup.mjs",
-    "check:r2": "node --env-file-if-exists=.env.local scripts/check-r2.mjs"
+    "check:r2": "node --env-file-if-exists=.env.local scripts/check-r2.mjs",
+    "backfill:thumbnails": "node scripts/backfill-thumbnails.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
@@ -29,6 +30,7 @@
     "@types/node": "^22.20.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "sharp": "^0.35.4",
     "typescript": "^5.9.3",
     "vitest": "^3.2.7"
   }

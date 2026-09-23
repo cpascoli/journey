@@ -167,7 +167,28 @@ SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... pnpm cleanup:media -- --apply
 ```
 
 The command is dry-run by default and processes at most 100 queued paths per
-applied run. Verify `SUPABASE_URL` before `--apply`. Queued paths beginning
+applied run. Verify `SUPABASE_URL` before `--apply`.
+
+### Thumbnails for photos published before they existed
+
+A one-off. New photos get their small copy when the app publishes them;
+everything already online needs this, or every entry would have to be
+republished by hand from the phone.
+
+```sh
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... \
+  BASE_URL=https://ashone.me OWNER_TOKEN=... pnpm backfill:thumbnails
+SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... \
+  BASE_URL=https://ashone.me OWNER_TOKEN=... pnpm backfill:thumbnails --apply
+```
+
+It previews by default. It reads each original with the service-role key,
+resizes it locally, and uploads through the owner API, so the JPEG check, the
+metadata refusal and the size limit are the ones the app goes through — this
+script decides nothing about what may be published. Only photos with no
+thumbnail are touched, so it is safe to re-run and a failure is simply picked
+up next time. Run it after deploying the thumbnail support, not before: the
+endpoint it posts to has to exist. Queued paths beginning
 `r2:` are video objects in Cloudflare R2, so pass `R2_ACCOUNT_ID`,
 `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and `R2_BUCKET` too; without them
 the preview says how many it cannot touch and an applied run reports them as

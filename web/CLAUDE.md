@@ -121,7 +121,9 @@ never by loading everything published and filtering.
 - The HTTP e2e scripts, `supabase db reset`, and SQL tests are for the local
   stack only. Never point them at the hosted project. `cleanup:media` is an
   operator command: it previews by default; verify `SUPABASE_URL` before
-  passing `--apply`.
+  passing `--apply`. `backfill:thumbnails` is the same kind of command, and
+  uploads through the owner API rather than writing to storage, so no rule
+  about what may be published lives in a script.
 - GPT Actions import the agent OpenAPI document. Keep it 3.1.0 with no `oneOf`,
   `anyOf`, `allOf` or `$ref`, every object schema with `properties`, and every
   summary, description and parameter description at most 300 characters —
