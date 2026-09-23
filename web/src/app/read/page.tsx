@@ -7,6 +7,12 @@ import { currentLanguage } from "@/lib/i18n/current";
 import { formatDay, stringsFor } from "@/lib/i18n/strings";
 import { entriesForCurrentInvite } from "@/lib/reader/entries";
 
+/**
+ * Thumbnails shown per entry on the listing: two rows on a phone, where the
+ * compact grid is two across. The rest are on the entry itself.
+ */
+const PREVIEW_MEDIA = 4;
+
 import { MediaGrid } from "../MediaGrid";
 import { SiteFooter } from "../SiteFooter";
 import { SiteHeader } from "../SiteHeader";
@@ -78,8 +84,19 @@ export default async function ReadPage({ searchParams }: Props) {
                   {entry.place_name ? ` · ${entry.place_name}` : ""}
                 </p>
                 <h2><Link href={`/read/${entry.id}`}>{title || strings.untitledEntry}</Link></h2>
-                <MediaGrid compact entryId={entry.id} language={language} media={entry.media} />
+                <MediaGrid
+                  compact
+                  entryId={entry.id}
+                  language={language}
+                  media={entry.media}
+                  moreHref={`/read/${entry.id}`}
+                  previewLimit={PREVIEW_MEDIA}
+                />
                 {text && <div className="entry-text excerpt">{text}</div>}
+                {/* The title is a link, but nothing said so. This does. */}
+                <p className="entry-more">
+                  <Link href={`/read/${entry.id}`}>{strings.readEntry} →</Link>
+                </p>
               </article>
             );
           })}

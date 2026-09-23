@@ -349,6 +349,29 @@ input {
   border-top: 1px solid color-mix(in srgb, var(--muted) 25%, transparent);
 }
 
+/* The whole card cannot be one link — it holds the media buttons — so the
+   title is underlined on hover to show it leads somewhere. */
+.entry-card:hover h2 a,
+.entry-card:focus-within h2 a {
+  text-decoration-thickness: 2px;
+}
+
+.entry-more {
+  margin: 1.25rem 0 0;
+  font-family: system-ui, sans-serif;
+  font-size: 0.9rem;
+}
+
+.entry-more a {
+  text-decoration: none;
+  color: var(--accent);
+}
+
+.entry-more a:hover,
+.entry-more a:focus-visible {
+  text-decoration: underline;
+}
+
 .entry-card h2,
 .panel h2 {
   margin: 0.2rem 0 0.75rem;
@@ -462,6 +485,28 @@ input {
 
 .photo-grid.compact-photos img {
   aspect-ratio: 4 / 3;
+}
+
+/* "+29", leading to the entry where they all are. Sized like a thumbnail so
+   the grid keeps its rhythm. */
+.media-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--muted) 14%, transparent);
+  font-family: system-ui, sans-serif;
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  color: var(--muted);
+}
+
+.media-more:hover,
+.media-more:focus-visible {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--ink);
 }
 
 /* A clip keeps its own shape: cropping a video to the grid would hide its

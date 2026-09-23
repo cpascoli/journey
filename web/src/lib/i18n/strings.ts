@@ -48,6 +48,9 @@ export type Strings = {
   showingCount: (matching: number, total: number) => string;
   noMatches: string;
   sourceOnGitHub: string;
+  moreMedia: (count: number) => string;
+  readEntry: string;
+  seeAllMedia: (count: number) => string;
   builtBy: (year: number) => string;
   conversation: string;
   noComments: (inviteName: string) => string;
@@ -104,6 +107,9 @@ const en: Strings = {
     matching === total ? `${total} entries` : `${matching} of ${total} entries`,
   noMatches: "No entries match these filters.",
   sourceOnGitHub: "Source on GitHub",
+  moreMedia: (count) => `+${count}`,
+  seeAllMedia: (count) => `See all ${count} photos and videos`,
+  readEntry: "Read this entry",
   builtBy: (year) => `© ${year} Carlo Pascoli`,
   conversation: "Comments",
   noComments: (inviteName) => `${inviteName}, add a comment.`,
@@ -162,6 +168,9 @@ const it: Strings = {
       : `${matching} di ${total} voci`,
   noMatches: "Nessuna voce corrisponde a questi filtri.",
   sourceOnGitHub: "Codice su GitHub",
+  moreMedia: (count) => `+${count}`,
+  seeAllMedia: (count) => `Vedi tutte le ${count} foto e video`,
+  readEntry: "Leggi questa voce",
   builtBy: (year) => `© ${year} Carlo Pascoli`,
   conversation: "Commenti",
   noComments: (inviteName) => `${inviteName}, aggiungi un commento.`,

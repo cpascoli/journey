@@ -51,7 +51,14 @@ export default async function OwnerDayPage({ params }: Params) {
               </div>
               <span className={`badge ${entry.visibility}`}>{entry.visibility}</span>
             </div>
-            <MediaGrid compact entryId={entry.id} language={language} media={entry.media} />
+            <MediaGrid
+              compact
+              entryId={entry.id}
+              language={language}
+              media={entry.media}
+              moreHref={`/owner/entries/${entry.id}`}
+              previewLimit={4}
+            />
             {entry.text && <div className="entry-text excerpt">{entry.text}</div>}
           </article>
         ))}

@@ -82,6 +82,9 @@ never by loading everything published and filtering.
 - Replacing an invite's link (`rotate_invite_token`) overwrites the hash in one
   statement, so the old link dies as the new one is born, and it refuses a
   revoked invite — rotating must never quietly restore access.
+- A listing shows at most four thumbnails per entry and a "+N" tile leading
+  to it; the entry itself shows them all. An entry with thirty photos was
+  putting thirty thumbnails on a page meant to be skimmed.
 - The grid asks for a photo's small copy (`/media/…?size=thumb`) and the
   viewer for the original, falling back to the original when no thumbnail
   exists so media published before them still loads. A thumbnail carries the
