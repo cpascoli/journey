@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ entryId: string; key: string }> };
 
-export async function GET(_request: Request, { params }: Params): Promise<Response> {
+export async function GET(request: Request, { params }: Params): Promise<Response> {
   const [{ entryId, key }, owner, cookieStore] = await Promise.all([
     params,
     currentOwner(),
@@ -21,6 +21,7 @@ export async function GET(_request: Request, { params }: Params): Promise<Respon
       inviteToken: cookieStore.get(INVITE_COOKIE)?.value,
       entryId,
       key,
+      wantsThumbnail: new URL(request.url).searchParams.get("size") === "thumb",
     },
     supabaseMediaReadServices(adminClient()),
   );

@@ -69,6 +69,9 @@ export function MediaGrid({
 
   if (media.length === 0) return null;
   const source = (item: Media) => `/media/${entryId}/${encodeURIComponent(item.key)}`;
+  // The grid shows the small copy; opening an item loads the original. Media
+  // published before thumbnails existed falls back to the original here.
+  const preview = (item: Media) => `${source(item)}?size=thumb`;
   const open = openIndex === null ? null : media[openIndex];
   const label = (item: Media, index: number) =>
     item.kind === "video" ? strings.videoAlt(index + 1) : strings.photoAlt(index + 1);
@@ -96,9 +99,10 @@ export function MediaGrid({
             ) : (
               <img
                 alt={label(item, index)}
+                decoding="async"
                 height={item.height ?? undefined}
                 loading="lazy"
-                src={source(item)}
+                src={preview(item)}
                 width={item.width ?? undefined}
               />
             )}

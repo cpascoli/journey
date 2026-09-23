@@ -7,6 +7,12 @@ export const MEDIA_KEY_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 /** Netlify functions accept request bodies up to 6 MB; photos are resized well below this. */
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
+/**
+ * A thumbnail is only there to save bandwidth, so one this large means
+ * something is wrong: the app exports them at a few hundred pixels.
+ */
+export const MAX_THUMBNAIL_BYTES = 400 * 1024;
+
 /** Shared by the photo, upload-url and commit routes, which all key on one. */
 export function parseMediaKey(key: string): string {
   if (!MEDIA_KEY_PATTERN.test(key)) {
@@ -37,6 +43,11 @@ export function mediaStoragePath(
   return version
     ? `entries/${entryId}/${key}/${version}.${extension}`
     : `entries/${entryId}/${key}.${extension}`;
+}
+
+/** The small copy of a photo, beside the original it belongs to. */
+export function thumbnailStoragePath(entryId: string, key: string, version: string): string {
+  return `entries/${entryId}/${key}/${version}-thumb.jpg`;
 }
 
 /** The stored form of a path: unprefixed for Supabase, so existing rows keep working. */

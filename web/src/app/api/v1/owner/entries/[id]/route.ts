@@ -16,6 +16,7 @@ type MediaRow = {
   asset_key: string;
   kind: string;
   storage_path: string;
+  thumb_path: string | null;
   width: number | null;
   height: number | null;
   taken_at: string | null;
@@ -25,7 +26,7 @@ type MediaRow = {
 async function mediaOf(db: SupabaseClient, entryId: string): Promise<MediaRow[]> {
   const { data, error } = await db
     .from("entry_media")
-    .select("asset_key, kind, storage_path, width, height, taken_at, sort_order")
+    .select("asset_key, kind, storage_path, thumb_path, width, height, taken_at, sort_order")
     .eq("entry_id", entryId)
     .order("sort_order");
   if (error) throw dbFailure(error, "list media");
@@ -49,7 +50,12 @@ export async function GET(request: Request, { params }: Params) {
       entry: {
         ...entry,
         tag_ids: (tags as { tag_id: string }[]).map((row) => row.tag_id),
-        media: media.map(({ storage_path: _path, ...row }) => row),
+        // Storage paths stay server-side; the app only needs to know whether
+        // a small copy exists, so it can upload the ones still missing.
+        media: media.map(({ storage_path: _path, thumb_path, ...row }) => ({
+          ...row,
+          thumb: thumb_path !== null,
+        })),
       },
     });
   });

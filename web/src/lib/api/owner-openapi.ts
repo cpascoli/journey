@@ -115,7 +115,13 @@ const entryReadResponse = {
                 type: "array",
                 items: {
                   type: "object",
-                  properties: { asset_key: { type: "string" } },
+                  properties: {
+                  asset_key: { type: "string" },
+                  thumb: {
+                    type: "boolean",
+                    description: "Whether a small copy exists for this photo.",
+                  },
+                },
                 },
               },
             },
@@ -214,6 +220,22 @@ export function ownerOpenApiDocument(origin: string) {
             uuidPath("id", "The app's entry id."),
             { name: "key", in: "path", required: true, schema: { type: "string" } },
           ],
+        }),
+      },
+      "/api/v1/owner/entries/{id}/media/{key}/thumb": {
+        put: op({
+          operationId: "putThumbnail",
+          summary: "Upload a photo's small copy",
+          scope: "journey:entries:write",
+          parameters: [
+            uuidPath("id", "The app's entry id."),
+            { name: "key", in: "path", required: true, schema: { type: "string", pattern: "^[A-Za-z0-9_-]{1,128}$" } },
+          ],
+          requestBody: {
+            required: true,
+            content: { "image/jpeg": { schema: { type: "string", format: "binary" } } },
+          },
+          responses: { "404": errorResponse, "413": errorResponse, "415": errorResponse },
         }),
       },
       "/api/v1/owner/entries/{id}/media/{key}/upload-url": {

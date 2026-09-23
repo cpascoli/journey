@@ -25,11 +25,16 @@ type MediaAccess = {
   inviteToken?: string;
   entryId: string;
   key: string;
+  /** The grid asks for the small copy; opening one asks for the original. */
+  wantsThumbnail?: boolean;
 };
 
+/** Where an item lives: the object, and the small copy when one was made. */
+export type MediaPaths = { storage_path: string; thumb_path: string | null };
+
 export type MediaReadServices = {
-  ownerPath(entryId: string, key: string): Promise<string | null>;
-  invitePath(tokenHash: string, entryId: string, key: string): Promise<string | null>;
+  ownerPath(entryId: string, key: string): Promise<MediaPaths | null>;
+  invitePath(tokenHash: string, entryId: string, key: string): Promise<MediaPaths | null>;
   signedUrl(path: string, expiresIn: number): Promise<string | null>;
 };
 
@@ -50,14 +55,17 @@ export async function serveMedia(
 ): Promise<Response> {
   if (!UUID_PATTERN.test(access.entryId) || !MEDIA_KEY_PATTERN.test(access.key)) return unavailable();
 
-  let path: string | null = null;
+  let paths: MediaPaths | null = null;
   if (access.owner) {
-    path = await services.ownerPath(access.entryId, access.key);
+    paths = await services.ownerPath(access.entryId, access.key);
   } else if (access.inviteToken && INVITE_TOKEN_PATTERN.test(access.inviteToken)) {
-    path = await services.invitePath(hashInviteToken(access.inviteToken), access.entryId, access.key);
+    paths = await services.invitePath(hashInviteToken(access.inviteToken), access.entryId, access.key);
   }
-  if (!path) return unavailable();
+  if (!paths) return unavailable();
 
+  // Falls back to the original, so media published before thumbnails existed
+  // still loads rather than breaking.
+  const path = (access.wantsThumbnail && paths.thumb_path) || paths.storage_path;
   const signedUrl = await services.signedUrl(path, ttlFor(path));
   if (!signedUrl) return unavailable();
   return new Response(null, {
@@ -76,11 +84,11 @@ export function supabaseMediaReadServices(db: SupabaseClient): MediaReadServices
     async ownerPath(entryId, key) {
       const { data, error } = await db
         .from("entry_media")
-        .select("storage_path")
+        .select("storage_path, thumb_path")
         .eq("entry_id", entryId)
         .eq("asset_key", key)
         .maybeSingle();
-      return error || !data ? null : (data as { storage_path: string }).storage_path;
+      return error || !data ? null : (data as MediaPaths);
     },
     async invitePath(tokenHash, entryId, key) {
       const { data, error } = await db.rpc("media_visible_to_invite", {
@@ -89,7 +97,7 @@ export function supabaseMediaReadServices(db: SupabaseClient): MediaReadServices
         p_asset_key: key,
       });
       if (error || !data || data.length !== 1) return null;
-      return (data[0] as { storage_path: string }).storage_path;
+      return data[0] as MediaPaths;
     },
     async signedUrl(storagePath, expiresIn) {
       // The path says which store holds the object: videos are on R2.

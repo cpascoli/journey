@@ -24,7 +24,7 @@ function services(overrides: Partial<MediaReadServices> = {}): MediaReadServices
 describe("media route authorization", () => {
   it("allows a signed owner session to read private entry media", async () => {
     const deps = services({
-      ownerPath: vi.fn().mockResolvedValue(storagePath),
+      ownerPath: vi.fn().mockResolvedValue({ storage_path: storagePath, thumb_path: null }),
       signedUrl: vi.fn().mockResolvedValue("https://storage.test/signed"),
     });
     const response = await serveMedia({ owner: true, entryId, key }, deps);
@@ -55,7 +55,7 @@ describe("media route authorization", () => {
   });
 
   it("hashes a valid invite cookie before server-side authorization", async () => {
-    const invitePath = vi.fn().mockResolvedValue(storagePath);
+    const invitePath = vi.fn().mockResolvedValue({ storage_path: storagePath, thumb_path: null });
     const response = await serveMedia(
       { owner: false, inviteToken, entryId, key },
       services({
@@ -71,7 +71,7 @@ describe("media route authorization", () => {
   it("returns generic 404 when signing fails", async () => {
     const response = await serveMedia(
       { owner: true, entryId, key },
-      services({ ownerPath: vi.fn().mockResolvedValue(storagePath) }),
+      services({ ownerPath: vi.fn().mockResolvedValue({ storage_path: storagePath, thumb_path: null }) }),
     );
     expect(response.status).toBe(404);
     expect(await response.text()).toBe("Not Found");
@@ -82,7 +82,7 @@ describe("video media", () => {
   it("signs a video for longer, so a URL cannot expire part-way through a clip", async () => {
     const videoPath = "r2:entries/e1/k1/v1.mp4";
     const deps = services({
-      ownerPath: vi.fn().mockResolvedValue(videoPath),
+      ownerPath: vi.fn().mockResolvedValue({ storage_path: videoPath, thumb_path: null }),
       signedUrl: vi.fn().mockResolvedValue("https://r2.test/signed"),
     });
     const response = await serveMedia({ owner: true, entryId, key }, deps);
@@ -94,6 +94,49 @@ describe("video media", () => {
   it("still refuses a video to a caller with no invite", async () => {
     const deps = services({ invitePath: vi.fn().mockResolvedValue(null) });
     const response = await serveMedia({ owner: false, inviteToken, entryId, key }, deps);
+    expect(response.status).toBe(404);
+    expect(deps.signedUrl).not.toHaveBeenCalled();
+  });
+});
+
+describe("thumbnails", () => {
+  const full = "entries/e1/k1/v1.jpg";
+  const thumb = "entries/e1/k1/v1-thumb.jpg";
+
+  function withThumbnail() {
+    return services({
+      ownerPath: vi.fn().mockResolvedValue({ storage_path: full, thumb_path: thumb }),
+      signedUrl: vi.fn().mockResolvedValue("https://storage.test/signed"),
+    });
+  }
+
+  it("serves the small copy when the grid asks for it", async () => {
+    const deps = withThumbnail();
+    await serveMedia({ owner: true, entryId, key, wantsThumbnail: true }, deps);
+    expect(deps.signedUrl).toHaveBeenCalledWith(thumb, MEDIA_URL_TTL_SECONDS);
+  });
+
+  it("serves the original when opening the item", async () => {
+    const deps = withThumbnail();
+    await serveMedia({ owner: true, entryId, key }, deps);
+    expect(deps.signedUrl).toHaveBeenCalledWith(full, MEDIA_URL_TTL_SECONDS);
+  });
+
+  /** Media published before thumbnails existed must still load. */
+  it("falls back to the original when no small copy was made", async () => {
+    const deps = services({
+      ownerPath: vi.fn().mockResolvedValue({ storage_path: full, thumb_path: null }),
+      signedUrl: vi.fn().mockResolvedValue("https://storage.test/signed"),
+    });
+    const response = await serveMedia({ owner: true, entryId, key, wantsThumbnail: true }, deps);
+    expect(response.status).toBe(302);
+    expect(deps.signedUrl).toHaveBeenCalledWith(full, MEDIA_URL_TTL_SECONDS);
+  });
+
+  /** A thumbnail is media too: asking for one must not skip authorization. */
+  it("refuses a thumbnail to a caller with no access", async () => {
+    const deps = services();
+    const response = await serveMedia({ owner: false, entryId, key, wantsThumbnail: true }, deps);
     expect(response.status).toBe(404);
     expect(deps.signedUrl).not.toHaveBeenCalled();
   });

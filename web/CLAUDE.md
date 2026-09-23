@@ -82,6 +82,12 @@ never by loading everything published and filtering.
 - Replacing an invite's link (`rotate_invite_token`) overwrites the hash in one
   statement, so the old link dies as the new one is born, and it refuses a
   revoked invite — rotating must never quietly restore access.
+- The grid asks for a photo's small copy (`/media/…?size=thumb`) and the
+  viewer for the original, falling back to the original when no thumbnail
+  exists so media published before them still loads. A thumbnail carries the
+  same location as a full image, so it is held to the same metadata rule.
+  Its cleanup is a trigger on `entry_media`, which keeps every existing
+  deletion path correct without versioning four functions.
 - Photos must arrive metadata-free; the server refuses EXIF, XMP and IPTC
   (`findPhotoMetadata`). Don't relax that to "strip on the server".
 - Videos are the same rule with a different file format: `findVideoMetadata`
