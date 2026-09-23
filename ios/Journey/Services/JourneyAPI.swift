@@ -172,6 +172,16 @@ struct JourneyAPI {
         )
     }
 
+    /// The small copy shown in the website's grid. Uploaded separately from
+    /// the photo, so an entry published before thumbnails existed gains one
+    /// on its next publish without re-sending the full image.
+    func putThumbnail(entryID: UUID, key mediaKey: String, _ thumbnail: PhotoExport.Photo) async throws {
+        _ = try await send(
+            "PUT", "api/v1/owner/entries/\(entryID.uuidString.lowercased())/media/\(mediaKey)/thumb",
+            body: thumbnail.jpeg, contentType: "image/jpeg"
+        )
+    }
+
     /// Uploads a video in three steps, because a Netlify function's request
     /// body caps at 6 MB: ask the website for a signed URL, send the file
     /// straight to the object store, then have the website verify and record
@@ -467,6 +477,8 @@ private nonisolated struct PutEntryResponse: Decodable {
 
 nonisolated struct RemoteEntryState: Equatable, Sendable {
     var mediaKeys: [String]
+    /// Keys whose small copy the website is still missing.
+    var keysWithoutThumbnail: [String] = []
     var clientContentHash: String?
     /// When the website's copy last changed, whoever changed it.
     var updatedAt: Date?
@@ -503,9 +515,13 @@ nonisolated struct RemoteEntryText: Decodable, Equatable, Sendable {
     }
 }
 
-private nonisolated struct GetEntryResponse: Decodable {
+/// Internal so tests can exercise how a media list becomes a state.
+nonisolated struct GetEntryResponse: Decodable {
     struct Item: Decodable {
-        struct Media: Decodable { var assetKey: String }
+        struct Media: Decodable {
+            var assetKey: String
+            var thumb: Bool?
+        }
         var media: [Media]
         var clientContentHash: String?
         var updatedAt: String?
@@ -521,6 +537,7 @@ private nonisolated struct GetEntryResponse: Decodable {
         var state: RemoteEntryState {
             RemoteEntryState(
                 mediaKeys: media.map(\.assetKey),
+                keysWithoutThumbnail: media.filter { $0.thumb != true }.map(\.assetKey),
                 clientContentHash: clientContentHash,
                 updatedAt: updatedAt.flatMap { Self.timestamps.date(from: $0) },
                 revision: revision,

@@ -80,6 +80,29 @@ final class Publisher {
         }
     }
 
+    /// Sends the small copies the website is still missing.
+    ///
+    /// Separate from the photo upload so an entry published before thumbnails
+    /// existed gains them on its next publish without re-sending full images.
+    /// Runs after the entry is confirmed and ignores failures: the website
+    /// falls back to the full image, so a missing thumbnail costs bandwidth,
+    /// not correctness, and must never fail a publish.
+    private func uploadMissingThumbnails(
+        for state: RemoteEntryState,
+        resolved: [(assetID: String, key: String)],
+        assetsByID: [String: PHAsset],
+        entryID: UUID,
+        api: JourneyAPI
+    ) async {
+        let wanted = Set(state.keysWithoutThumbnail)
+        guard !wanted.isEmpty else { return }
+        for item in resolved where wanted.contains(item.key) {
+            guard let asset = assetsByID[item.assetID], asset.mediaType == .image else { continue }
+            guard let thumbnail = await PhotoExport.thumbnail(for: asset) else { continue }
+            try? await api.putThumbnail(entryID: entryID, key: item.key, thumbnail)
+        }
+    }
+
     /// The website's copy of an entry, when it holds words the app never sent.
     ///
     /// The website clears `client_content_hash` when its text is edited there,
@@ -594,6 +617,9 @@ final class Publisher {
               state.clientContentHash == payload.clientContentHash else {
             throw PublishingError.photosNotConfirmed
         }
+        await uploadMissingThumbnails(
+            for: state, resolved: resolved, assetsByID: assetsByID, entryID: entry.id, api: api
+        )
         cache.confirmedPhotoAssetIDs = resolved.map(\.assetID)
         cache.confirmedMediaKeys = keys
         try finishPublish(operation, entry: entry, targetUpdate: targetUpdate)

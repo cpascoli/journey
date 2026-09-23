@@ -124,6 +124,11 @@ xcodebuild test -project Journey.xcodeproj -scheme Journey \
   2048 px with the orientation baked in, then APP1 (EXIF, XMP), APP13 (IPTC)
   and comment segments stripped. `JPEGMetadata` mirrors the website's
   `findPhotoMetadata`; keep them in step, and never rely on the server to strip.
+- `PhotoExport.thumbnail` makes the 480px copy the website's grid shows,
+  stripped exactly as the full image is. It uploads separately and only for
+  keys the website reports as lacking one, so republishing an older entry
+  gains thumbnails without re-sending the photos. A failed thumbnail never
+  fails a publish: the website falls back to the full image.
 - Videos leave only through `VideoExport`: H.264 at 720p, `metadata = []` to
   drop the QuickTime location atoms, and `shouldOptimizeForNetworkUse = true`.
   That last flag is a requirement, not a tuning knob — the website verifies an

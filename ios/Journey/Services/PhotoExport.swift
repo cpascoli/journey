@@ -17,6 +17,11 @@ enum PhotoExport {
 
     /// Longest side, in pixels.
     nonisolated static let maxPixelSize = 2048
+    /// Longest side of the small copy a grid shows, so reading an entry does
+    /// not download every photo at full size.
+    nonisolated static let thumbnailPixelSize = 480
+    /// The website's `MAX_THUMBNAIL_BYTES`.
+    nonisolated static let maxThumbnailBytes = 400 * 1024
     /// The website's `MAX_PHOTO_BYTES`.
     nonisolated static let maxBytes = 5 * 1024 * 1024
 
@@ -40,8 +45,30 @@ enum PhotoExport {
         return await Task.detached(priority: .userInitiated) { jpeg(from: data) }.value
     }
 
+    /// The same photo at grid size. Metadata is stripped exactly as it is for
+    /// the full image: a thumbnail carries the location just as readily.
+    static func thumbnail(for asset: PHAsset) async -> Photo? {
+        let options = PHImageRequestOptions()
+        options.version = .current
+        options.deliveryMode = .highQualityFormat
+        options.isNetworkAccessAllowed = true
+        let data: Data? = await withCheckedContinuation { continuation in
+            PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { data, _, _, _ in
+                continuation.resume(returning: data)
+            }
+        }
+        guard let data else { return nil }
+        return await Task.detached(priority: .utility) {
+            jpeg(from: data, maxPixelSize: thumbnailPixelSize, limit: maxThumbnailBytes)
+        }.value
+    }
+
     /// Re-encodes any image ImageIO reads (HEIC, JPEG, …) as a metadata-free JPEG.
     nonisolated static func jpeg(from data: Data) -> Photo? {
+        jpeg(from: data, maxPixelSize: maxPixelSize, limit: maxBytes)
+    }
+
+    nonisolated static func jpeg(from data: Data, maxPixelSize: Int, limit: Int) -> Photo? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
@@ -59,7 +86,7 @@ enum PhotoExport {
             guard CGImageDestinationFinalize(destination),
                   let stripped = JPEGMetadata.stripped(encoded as Data),
                   JPEGMetadata.locationCarriers(in: stripped).isEmpty else { return nil }
-            if stripped.count <= maxBytes {
+            if stripped.count <= limit {
                 return Photo(jpeg: stripped, width: image.width, height: image.height)
             }
         }

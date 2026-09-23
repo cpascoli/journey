@@ -72,3 +72,37 @@ final class InviteAccessLabelTests: XCTestCase {
         XCTAssertEqual(InviteAccessLabel.readsText(visibleEntryCount: nil, isRevoked: false), "reads unknown")
     }
 }
+
+final class ThumbnailContractTests: XCTestCase {
+    /// The app must not export a thumbnail the website will refuse for size.
+    func testThumbnailLimitsMatchTheWebsiteContract() {
+        XCTAssertEqual(PhotoExport.maxThumbnailBytes, 400 * 1024, "web MAX_THUMBNAIL_BYTES")
+        XCTAssertLessThan(PhotoExport.thumbnailPixelSize, PhotoExport.maxPixelSize)
+    }
+
+    /// The point of the whole thing: a grid item should cost a fraction of
+    /// the full image, so the size caps have to differ by an order of
+    /// magnitude rather than a little.
+    func testAThumbnailIsMuchSmallerThanAPhoto() {
+        XCTAssertLessThan(PhotoExport.maxThumbnailBytes * 10, PhotoExport.maxBytes)
+    }
+
+    /// The website reports which keys still lack a small copy; anything it
+    /// does not mark as having one must be offered a thumbnail.
+    func testMediaWithoutAThumbnailIsReported() throws {
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let json = """
+        {"entry":{"client_content_hash":null,"media":[
+          {"asset_key":"has","thumb":true},
+          {"asset_key":"missing","thumb":false},
+          {"asset_key":"older"}
+        ]}}
+        """
+        let state = try decoder.decode(GetEntryResponse.self, from: Data(json.utf8)).entry.state
+        XCTAssertEqual(state.mediaKeys, ["has", "missing", "older"])
+        // An entry published before thumbnails existed sends no flag at all,
+        // and must still be treated as missing one.
+        XCTAssertEqual(state.keysWithoutThumbnail, ["missing", "older"])
+    }
+}
