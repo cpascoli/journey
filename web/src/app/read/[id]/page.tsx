@@ -43,7 +43,10 @@ export default async function ReaderEntryPage({ params }: Params) {
         {/* The story first: on a full entry the writing is the point, and a
             grid of photos above it pushed it off the screen. */}
         {text && <div className="entry-text">{text}</div>}
-        <MediaGrid entryId={entry.id} language={language} media={entry.media} />
+        {/* A thumbnail grid, not a gallery of full images: the small copy is
+            480px, so cells have to stay small enough for it to look sharp.
+            Tapping one opens the original. */}
+        <MediaGrid compact entryId={entry.id} language={language} media={entry.media} />
       </article>
       <CommentThread comments={comments} entryId={entry.id} language={language} />
     </main>
