@@ -47,6 +47,8 @@ export type Strings = {
   clearFilters: string;
   showingCount: (matching: number, total: number) => string;
   noMatches: string;
+  sourceOnGitHub: string;
+  builtBy: (year: number) => string;
   conversation: string;
   noComments: (inviteName: string) => string;
   commentPlaceholder: string;
@@ -101,6 +103,8 @@ const en: Strings = {
   showingCount: (matching, total) =>
     matching === total ? `${total} entries` : `${matching} of ${total} entries`,
   noMatches: "No entries match these filters.",
+  sourceOnGitHub: "Source on GitHub",
+  builtBy: (year) => `© ${year} Carlo Pascoli`,
   conversation: "Comments",
   noComments: (inviteName) => `${inviteName}, add a comment.`,
   commentPlaceholder: "Write a comment…",
@@ -157,6 +161,8 @@ const it: Strings = {
       ? `${total} voci`
       : `${matching} di ${total} voci`,
   noMatches: "Nessuna voce corrisponde a questi filtri.",
+  sourceOnGitHub: "Codice su GitHub",
+  builtBy: (year) => `© ${year} Carlo Pascoli`,
   conversation: "Commenti",
   noComments: (inviteName) => `${inviteName}, aggiungi un commento.`,
   commentPlaceholder: "Scrivi un commento…",

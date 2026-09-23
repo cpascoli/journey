@@ -8,6 +8,7 @@ import { formatDay, stringsFor } from "@/lib/i18n/strings";
 import { entriesForCurrentInvite } from "@/lib/reader/entries";
 
 import { MediaGrid } from "../MediaGrid";
+import { SiteFooter } from "../SiteFooter";
 import { SiteHeader } from "../SiteHeader";
 import { FilterPanel } from "./FilterPanel";
 import { NoAccess } from "./NoAccess";
@@ -90,6 +91,7 @@ export default async function ReadPage({ searchParams }: Props) {
           </nav>
         </div>
       </div>
+      <SiteFooter language={language} />
     </main>
   );
 }

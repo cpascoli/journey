@@ -787,6 +787,24 @@ input {
   color: var(--muted);
 }
 
+/* A quiet close to the page: present, not competing with the writing. */
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  margin-top: 4rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  font-family: system-ui, sans-serif;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.site-footer p {
+  margin: 0;
+}
+
 .media-placeholder {
   margin-top: 1.5rem;
   padding: 1rem;

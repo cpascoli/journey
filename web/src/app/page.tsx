@@ -2,6 +2,7 @@ import { currentLanguage } from "@/lib/i18n/current";
 import { stringsFor } from "@/lib/i18n/strings";
 
 import { LanguageToggle } from "./LanguageToggle";
+import { SiteFooter } from "./SiteFooter";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ export default async function Home() {
       <h1>{strings.siteName}</h1>
       <p className="lede">{strings.homeLede}</p>
       <p className="note">{strings.homeNote}</p>
+      <SiteFooter language={language} />
     </main>
   );
 }

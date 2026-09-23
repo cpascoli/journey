@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { MediaGrid } from "@/app/MediaGrid";
+import { SiteFooter } from "@/app/SiteFooter";
 import { SiteHeader } from "@/app/SiteHeader";
 import { entryTextFor } from "@/lib/domain/language";
 import { currentLanguage } from "@/lib/i18n/current";
@@ -54,6 +55,7 @@ export default async function ReaderEntryPage({ params }: Params) {
         inviteName={result.inviteName}
         language={language}
       />
+      <SiteFooter language={language} />
     </main>
   );
 }

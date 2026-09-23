@@ -43,8 +43,12 @@ export type NoReaderAccess = { status: "none" } | { status: "revoked" };
 
 export type ReaderAccess = NoReaderAccess | { status: "ok"; inviteId: string; inviteName: string };
 
-/** Entries per page. The reader is a phone-first page of photos and clips. */
-export const READER_PAGE_SIZE = 20;
+/**
+ * Entries per page. Ten rather than twenty because each entry carries a grid
+ * of thumbnails: twenty was more than a phone should fetch at once, and with
+ * a journal this size the pager never appeared at all.
+ */
+export const READER_PAGE_SIZE = 10;
 
 export type ReaderPage = {
   inviteName: string;

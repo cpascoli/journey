@@ -4,6 +4,7 @@ import type { Language } from "@/lib/domain/language";
 import { stringsFor } from "@/lib/i18n/strings";
 
 import { LanguageToggle } from "../LanguageToggle";
+import { SiteFooter } from "../SiteFooter";
 
 /**
  * A revoked invitation is not the same as a broken link, and saying so saves
@@ -35,6 +36,7 @@ export function NoAccess({
       <h1>{heading}</h1>
       <p className="lede">{lede}</p>
       {entry && status !== "revoked" && <Link href="/read">{strings.returnToJournal}</Link>}
+      <SiteFooter language={language} />
     </main>
   );
 }
