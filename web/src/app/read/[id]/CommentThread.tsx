@@ -13,10 +13,13 @@ import { CommentForm } from "./CommentForm";
 export function CommentThread({
   entryId,
   comments,
+  inviteName,
   language,
 }: {
   entryId: string;
   comments: Comment[];
+  /** The invitation's own name, so the prompt speaks to whoever is reading. */
+  inviteName: string;
   language: Language;
 }) {
   const strings = stringsFor(language);
@@ -29,7 +32,7 @@ export function CommentThread({
     <section className="comments" aria-label={strings.conversation}>
       <h2>{strings.conversation}</h2>
       {comments.length === 0 ? (
-        <p className="empty">{strings.noComments}</p>
+        <p className="empty">{strings.noComments(inviteName)}</p>
       ) : (
         <ol className="comment-list">
           {comments.map((comment) => (

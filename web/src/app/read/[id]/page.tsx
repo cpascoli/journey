@@ -48,7 +48,12 @@ export default async function ReaderEntryPage({ params }: Params) {
             Tapping one opens the original. */}
         <MediaGrid compact entryId={entry.id} language={language} media={entry.media} />
       </article>
-      <CommentThread comments={comments} entryId={entry.id} language={language} />
+      <CommentThread
+        comments={comments}
+        entryId={entry.id}
+        inviteName={result.inviteName}
+        language={language}
+      />
     </main>
   );
 }

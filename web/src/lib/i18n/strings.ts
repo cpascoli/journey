@@ -48,7 +48,7 @@ export type Strings = {
   showingCount: (matching: number, total: number) => string;
   noMatches: string;
   conversation: string;
-  noComments: string;
+  noComments: (inviteName: string) => string;
   commentPlaceholder: string;
   sendComment: string;
   you: string;
@@ -102,7 +102,7 @@ const en: Strings = {
     matching === total ? `${total} entries` : `${matching} of ${total} entries`,
   noMatches: "No entries match these filters.",
   conversation: "Comments",
-  noComments: "No comments yet. Say something about this day.",
+  noComments: (inviteName) => `${inviteName}, add a comment.`,
   commentPlaceholder: "Write a comment…",
   sendComment: "Send",
   you: "You",
@@ -158,7 +158,7 @@ const it: Strings = {
       : `${matching} di ${total} voci`,
   noMatches: "Nessuna voce corrisponde a questi filtri.",
   conversation: "Commenti",
-  noComments: "Nessun commento. Racconta qualcosa di questa giornata.",
+  noComments: (inviteName) => `${inviteName}, aggiungi un commento.`,
   commentPlaceholder: "Scrivi un commento…",
   sendComment: "Invia",
   you: "Tu",
