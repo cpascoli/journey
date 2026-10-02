@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-
+import { redirectHere } from "@/lib/api/origin";
 import { LANGUAGE_COOKIE, parseLanguage } from "@/lib/domain/language";
 
 export const dynamic = "force-dynamic";
@@ -28,10 +27,7 @@ function safeDestination(next: string | null): string {
 export async function GET(request: Request, { params }: Params) {
   const url = new URL(request.url);
   const language = parseLanguage((await params).code);
-  const response = NextResponse.redirect(
-    new URL(safeDestination(url.searchParams.get("next")), request.url),
-    303,
-  );
+  const response = redirectHere(safeDestination(url.searchParams.get("next")));
   response.headers.set("Cache-Control", "no-store");
   if (language) {
     response.cookies.set(LANGUAGE_COOKIE, language, {

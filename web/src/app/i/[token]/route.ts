@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-
+import { redirectHere } from "@/lib/api/origin";
 import { INVITE_COOKIE, secureCookieOptions } from "@/lib/auth/session";
 import { hashInviteToken } from "@/lib/owner/invites";
 import { adminClient } from "@/lib/supabase/admin";
@@ -8,10 +7,9 @@ export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ token: string }> };
 
-export async function GET(request: Request, { params }: Params) {
+export async function GET(_request: Request, { params }: Params) {
   const token = (await params).token;
-  const destination = new URL("/read", request.url);
-  const response = NextResponse.redirect(destination, 303);
+  const response = redirectHere("/read");
   response.headers.set("Cache-Control", "no-store");
   response.headers.set("Referrer-Policy", "no-referrer");
   response.cookies.set(INVITE_COOKIE, "", secureCookieOptions("lax", 0));

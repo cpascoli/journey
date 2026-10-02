@@ -1,3 +1,5 @@
+import { NextResponse } from "next/server";
+
 /**
  * The address readers should use, for links the site hands out.
  *
@@ -34,4 +36,17 @@ export function publicOrigin(
     return `${protocol}://${host}`;
   }
   return new URL(fallbackUrl).origin;
+}
+
+/**
+ * A redirect to a path on whichever host the browser is already on.
+ *
+ * The `Location` is relative, so the browser resolves it against the address
+ * in its own bar. Building it from `request.url` instead sent readers to the
+ * deploy's own `.netlify.app` hostname: the invitation cookie, set on the real
+ * domain, did not travel with them, and the journal said the invitation was
+ * unavailable. `path` must already be a path on this site.
+ */
+export function redirectHere(path: string): NextResponse {
+  return new NextResponse(null, { status: 303, headers: { Location: path } });
 }

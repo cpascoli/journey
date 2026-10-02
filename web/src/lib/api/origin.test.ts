@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { publicOrigin } from "./origin";
+import { publicOrigin, redirectHere } from "./origin";
 
 const request = "https://main--journey-web.netlify.app/api/v1/owner/invites";
 
@@ -60,5 +60,20 @@ describe("publicOrigin", () => {
 
   it("uses the request as a last resort", () => {
     expect(publicOrigin(headers(), request, {})).toBe("https://main--journey-web.netlify.app");
+  });
+});
+
+describe("redirectHere", () => {
+  /** Absolute, it carried the deploy's hostname and lost the invitation cookie. */
+  it("sends a relative location, so the browser stays on its own host", () => {
+    const response = redirectHere("/read");
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe("/read");
+  });
+
+  it("keeps the cookies set on it", () => {
+    const response = redirectHere("/read");
+    response.cookies.set("journey_invite", "token", { path: "/" });
+    expect(response.headers.get("set-cookie")).toContain("journey_invite=token");
   });
 });
