@@ -50,6 +50,11 @@ export type Strings = {
   sourceOnGitHub: string;
   moreMedia: (count: number) => string;
   readEntry: string;
+  metaDate: string;
+  metaPlace: string;
+  metaTags: string;
+  metaMedia: string;
+  contactSheet: string;
   seeAllMedia: (count: number) => string;
   builtBy: (year: number) => string;
   conversation: string;
@@ -110,6 +115,11 @@ const en: Strings = {
   moreMedia: (count) => `+${count}`,
   seeAllMedia: (count) => `See all ${count} photos and videos`,
   readEntry: "Read this entry",
+  metaDate: "Date",
+  metaPlace: "Place",
+  metaTags: "Tags",
+  metaMedia: "Photos & videos",
+  contactSheet: "Contact sheet",
   builtBy: (year) => `© ${year} Carlo Pascoli`,
   conversation: "Comments",
   noComments: (inviteName) => `${inviteName}, add a comment.`,
@@ -171,6 +181,11 @@ const it: Strings = {
   moreMedia: (count) => `+${count}`,
   seeAllMedia: (count) => `Vedi tutte le ${count} foto e video`,
   readEntry: "Leggi questa voce",
+  metaDate: "Data",
+  metaPlace: "Luogo",
+  metaTags: "Tag",
+  metaMedia: "Foto e video",
+  contactSheet: "Provini",
   builtBy: (year) => `© ${year} Carlo Pascoli`,
   conversation: "Commenti",
   noComments: (inviteName) => `${inviteName}, aggiungi un commento.`,

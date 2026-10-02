@@ -94,7 +94,7 @@ export function FilterPanel({
       {facets.length > 0 && (
         <div className="filter-group">
           <h2>{strings.filters}</h2>
-          <div className="chips">
+          <div className="chips tag-list">
             <Link
               aria-current={filters.tag === null ? "true" : undefined}
               className={`chip${filters.tag === null ? " current" : ""}`}

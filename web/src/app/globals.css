@@ -1,9 +1,27 @@
-/* The same warm paper as the iPhone app's journal pages. */
+/*
+ * Field notes: a Swiss grid on the same warm paper as the iPhone app's
+ * journal pages. Three faces, each with one job — Geist for structure, Geist
+ * Mono for facts (dates, places, counts), Newsreader for the writing — and
+ * the rust accent kept for small marks: the current language, a link's
+ * underline, focus.
+ */
 :root {
   --paper: #fbf7ef;
   --ink: #1d1b18;
   --muted: #6f685e;
   --accent: #b5562f;
+  --rule: color-mix(in srgb, var(--ink) 16%, transparent);
+  --tone: color-mix(in srgb, var(--muted) 14%, transparent);
+  --danger: #b34136;
+
+  --sans: var(--font-sans), system-ui, sans-serif;
+  --mono: var(--font-mono), ui-monospace, monospace;
+  --serif: var(--font-serif), ui-serif, Georgia, serif;
+
+  /* The page is a 12-column grid inside these margins. */
+  --gutter: 1.5rem;
+  --margin: clamp(1rem, 4vw, 4rem);
+  --max: 90rem;
   color-scheme: light;
 }
 
@@ -13,6 +31,7 @@
     --ink: #f1ece2;
     --muted: #a39b8e;
     --accent: #e08a5f;
+    --danger: #e0786d;
     color-scheme: dark;
   }
 }
@@ -29,69 +48,131 @@ body {
 }
 
 body {
-  font-family: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
-  line-height: 1.6;
+  font-family: var(--sans);
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 a {
   color: inherit;
-  text-decoration-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  text-underline-offset: 0.18em;
+  text-decoration-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
 }
 
+a:hover {
+  color: var(--accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Facts are set in monospace capitals: small, spaced, and quiet. */
+.eyebrow,
+.site-header-eyebrow,
+.entry-meta,
+.entry-facts,
+.filter-group h2,
+.filter-count,
+.filter-search label,
+.contact-sheet h2,
+.comments h2,
+.comment-meta,
+.reader-paging,
+.back-link,
+.site-footer,
+.day-month h3,
+.edit-text legend,
+.badge {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Pages that are a single message: home, sign in, a withdrawn invitation. */
 .page {
-  max-width: 40rem;
+  max-width: 60rem;
   margin: 0 auto;
-  padding: 18vh 1.5rem 4rem;
+  padding: 1.5rem var(--margin) 4rem;
+}
+
+.page > h1,
+.page-top + h1 {
+  margin-top: 16vh;
+}
+
+.page-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--ink);
 }
 
 .eyebrow {
   margin: 0;
-  font-family: system-ui, sans-serif;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
   color: var(--muted);
 }
 
 h1 {
-  margin: 0.25rem 0 1.25rem;
-  font-size: clamp(2.75rem, 8vw, 4rem);
-  font-weight: 600;
-  line-height: 1.1;
+  margin: 0.25rem 0 1.5rem;
+  font-size: clamp(3rem, 9vw, 6rem);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 0.92;
 }
 
 .lede {
+  max-width: 34em;
   margin: 0 0 2rem;
-  font-size: 1.25rem;
+  font-family: var(--serif);
+  font-size: clamp(1.2rem, 2.4vw, 1.45rem);
+  line-height: 1.5;
 }
 
 .note {
+  max-width: 34em;
   margin: 0;
-  padding-left: 1rem;
-  border-left: 2px solid var(--accent);
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  font-family: var(--serif);
   font-style: italic;
   color: var(--muted);
 }
 
-.compact {
-  padding-top: 12vh;
+.compact > h1,
+.compact .page-top + h1 {
+  margin-top: 12vh;
 }
 
 button,
-input {
+input,
+textarea,
+select {
   font: inherit;
 }
 
 button {
-  border: 0;
-  border-radius: 999px;
-  padding: 0.7rem 1.1rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  padding: 0.6rem 1.2rem;
   background: var(--ink);
   color: var(--paper);
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
+}
+
+button:hover {
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 button:disabled {
@@ -100,33 +181,48 @@ button:disabled {
 }
 
 button.secondary {
-  border: 1px solid color-mix(in srgb, var(--muted) 35%, transparent);
   background: transparent;
+  color: var(--ink);
+  border-color: var(--rule);
+}
+
+button.secondary:hover {
+  border-color: var(--ink);
   color: var(--ink);
 }
 
 button.danger {
-  color: #b34136;
+  color: var(--danger);
 }
 
-input {
+/* Fields are a line to write on, not a box. */
+input,
+textarea {
   width: 100%;
-  border: 1px solid color-mix(in srgb, var(--muted) 35%, transparent);
-  border-radius: 0.65rem;
-  padding: 0.7rem 0.8rem;
-  background: color-mix(in srgb, var(--paper) 92%, var(--ink));
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  border-radius: 0;
+  padding: 0.6rem 0;
+  background: transparent;
   color: var(--ink);
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-bottom: 2px solid var(--accent);
+  margin-bottom: -1px;
 }
 
 .stack {
   display: grid;
-  gap: 0.75rem;
+  gap: 1rem;
   max-width: 28rem;
 }
 
 .form-error {
   margin: 0;
-  color: #b34136;
+  color: var(--danger);
 }
 
 .hint,
@@ -134,20 +230,9 @@ input {
   color: var(--muted);
 }
 
-.reader,
-.dashboard {
-  width: min(100% - 2rem, 68rem);
-  margin: 0 auto;
-  padding: 4rem 0;
-}
-
-.reader {
-  max-width: 46rem;
-}
-
-/* The filtered reader needs room for a sidebar without squeezing the entries. */
-.reader.wide {
-  max-width: 72rem;
+.empty {
+  font-family: var(--serif);
+  font-size: 1.15rem;
 }
 
 .visually-hidden {
@@ -161,11 +246,146 @@ input {
   white-space: nowrap;
 }
 
+/* ---------------------------------------------------------------- frame */
+
+.reader,
+.dashboard {
+  width: 100%;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 var(--margin) 2rem;
+}
+
+/* The owner's single-entry view keeps a reading width. */
+.reader:not(.wide):not(.entry-page) {
+  max-width: 50rem;
+  padding-top: 2rem;
+}
+
+/* Wordmark and language on one line; who it is shared with underneath on a
+   phone, between them on anything wider. */
+.site-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: var(--gutter);
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--ink);
+}
+
+.wordmark {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 0.75rem 0;
+}
+
+.site-header-eyebrow {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin: 0;
+  padding-bottom: 0.25rem;
+  color: var(--muted);
+}
+
+@media (min-width: 48rem) {
+  .site-header {
+    grid-template-columns: 3fr 6fr 3fr;
+    padding: 1rem 0 0.75rem;
+  }
+
+  .site-header-eyebrow {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0;
+  }
+
+  .site-header .language-toggle {
+    justify-self: end;
+  }
+}
+
+.language-toggle {
+  display: flex;
+  flex: none;
+  gap: 0.25rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+}
+
+/* 44px tall to tap, though the letters are small. */
+.language-toggle .language {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 0.5rem;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+
+.language-toggle .language:hover {
+  color: var(--ink);
+}
+
+.language-toggle .language.current {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+.masthead {
+  margin: 0;
+  padding: clamp(2.5rem, 7vw, 4.5rem) 0 clamp(1.5rem, 4vw, 3rem);
+  border-bottom: 1px solid var(--rule);
+  font-size: clamp(4.5rem, 14vw, 10.5rem);
+  letter-spacing: -0.055em;
+  line-height: 0.82;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  margin: 0.5rem 0 1rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+/* A quiet close to the page: present, not competing with the writing. */
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  margin-top: 4rem;
+  padding: 1.25rem 0 2.5rem;
+  border-top: 1px solid var(--ink);
+  color: var(--muted);
+}
+
+.site-footer p {
+  margin: 0;
+}
+
+.site-footer a {
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  color: var(--accent);
+}
+
+/* -------------------------------------------------------------- journal */
+
 /* Stacked on a phone: the filters are a compact bar and the entries follow
    straight after, so the writing stays the first thing you read. */
 .reader-layout {
   display: grid;
   gap: 2rem;
+  padding-top: 1.5rem;
 }
 
 .reader-entries {
@@ -175,45 +395,28 @@ input {
 .filters {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--rule);
 }
 
 .filter-search {
   display: flex;
-  gap: 0.5rem;
+  align-items: flex-end;
+  gap: 0.75rem;
 }
 
 .filter-search input {
   flex: 1;
   min-width: 0;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent);
-  border-radius: 0.5rem;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 0.95rem;
 }
 
 .filter-search button {
   flex: none;
-  padding: 0.5rem 0.9rem;
-  border: 0;
-  border-radius: 0.5rem;
-  background: var(--accent);
-  color: var(--paper);
-  font-family: system-ui, sans-serif;
-  font-size: 0.85rem;
-  cursor: pointer;
 }
 
 .filter-group h2 {
-  margin: 0 0 0.5rem;
-  font-family: system-ui, sans-serif;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  margin: 0 0 0.6rem;
   color: var(--muted);
 }
 
@@ -232,169 +435,248 @@ input {
 }
 
 .chip {
+  display: inline-flex;
   flex: none;
-  padding: 0.3rem 0.7rem;
-  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
-  border-radius: 999px;
-  font-family: system-ui, sans-serif;
-  font-size: 0.82rem;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--rule);
+  font-size: 0.85rem;
   text-decoration: none;
   white-space: nowrap;
 }
 
+.chip:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
 .chip.current {
-  border-color: transparent;
-  background: var(--accent);
+  border-color: var(--ink);
+  background: var(--ink);
   color: var(--paper);
 }
 
 .chip .count {
-  opacity: 0.65;
+  font-family: var(--mono);
+  font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
+  opacity: 0.65;
 }
 
 .filter-count {
   margin: 0;
-  font-family: system-ui, sans-serif;
-  font-size: 0.8rem;
   color: var(--muted);
 }
 
-@media (min-width: 60rem) {
-  .reader-layout {
-    grid-template-columns: 15rem minmax(0, 1fr);
-    gap: 3rem;
-  }
-
-  .filters {
-    position: sticky;
-    top: 2rem;
-    align-self: start;
-    gap: 1.5rem;
-  }
-
-  .filter-search {
-    flex-wrap: wrap;
-  }
-
-  /* Room to breathe in a column, so tags wrap instead of scrolling. */
-  .chips {
-    flex-wrap: wrap;
-    overflow-x: visible;
-  }
-}
-
-.reader-header,
-.dashboard-header {
-  margin-bottom: 3rem;
-}
-
-/* Title on the left, language flags on the right. */
-.site-header,
-.page-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 3rem;
-}
-
-.page-top {
-  margin-bottom: 0.5rem;
-}
-
-.site-header-text > :first-child,
-.site-header-text > h1 {
-  margin-top: 0;
-}
-
-.language-toggle {
-  display: flex;
-  flex: none;
-  gap: 0.5rem;
-  padding-top: 0.15rem;
-}
-
-.language-toggle .flag {
-  display: block;
-  width: 1.65rem;
-  border-radius: 0.2rem;
-  /* The unselected flag recedes rather than disappearing, so it still reads
-     as something you can press. */
-  opacity: 0.45;
-  outline: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
-  outline-offset: 0;
-  overflow: hidden;
-  transition: opacity 0.15s ease;
-}
-
-.language-toggle .flag svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.language-toggle .flag:hover,
-.language-toggle .flag:focus-visible {
-  opacity: 0.85;
-}
-
-.language-toggle .flag.current {
-  opacity: 1;
-  outline: 2px solid var(--accent);
+.filter-count a {
+  color: var(--ink);
 }
 
 .entry-card {
-  padding: 2.5rem 0;
-  border-top: 1px solid color-mix(in srgb, var(--muted) 25%, transparent);
+  display: grid;
+  gap: 1rem;
+  padding: 2rem 0 2.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.entry-card:first-child {
+  padding-top: 0;
+}
+
+.entry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0;
+}
+
+.entry-meta .quiet {
+  color: var(--muted);
+}
+
+.entry-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.entry-card h2 {
+  margin: 0;
+  font-size: clamp(1.9rem, 4.4vw, 2.75rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+}
+
+.entry-card h2 a {
+  text-decoration: none;
 }
 
 /* The whole card cannot be one link — it holds the media buttons — so the
    title is underlined on hover to show it leads somewhere. */
 .entry-card:hover h2 a,
 .entry-card:focus-within h2 a {
+  text-decoration: underline;
   text-decoration-thickness: 2px;
 }
 
 .entry-more {
-  margin: 1.25rem 0 0;
-  font-family: system-ui, sans-serif;
+  margin: 0;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .entry-more a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+}
+
+.reader-paging {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1.5rem 0 1rem;
+  /* One link alone still sits on the correct side. */
+  flex-wrap: wrap;
+}
+
+.reader-paging a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
   text-decoration: none;
-  color: var(--accent);
 }
 
-.entry-more a:hover,
-.entry-more a:focus-visible {
-  text-decoration: underline;
+.reader-paging a:only-child:last-child {
+  margin-left: auto;
 }
 
-.entry-card h2,
-.panel h2 {
-  margin: 0.2rem 0 0.75rem;
-  line-height: 1.2;
+@media (min-width: 48rem) {
+  /* The facts get a margin column of their own, like a logbook. */
+  .entry-card {
+    grid-template-columns: minmax(8rem, 2fr) 7fr;
+    column-gap: var(--gutter);
+    padding: 2.5rem 0 3.5rem;
+  }
+
+  .entry-meta {
+    flex-direction: column;
+    padding-top: 0.6rem;
+  }
 }
 
-.entry-card h2 {
-  font-size: clamp(1.8rem, 5vw, 2.5rem);
+@media (min-width: 60rem) {
+  .reader-layout {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+    padding-top: 2.5rem;
+  }
+
+  .filters {
+    grid-column: span 3;
+    position: sticky;
+    top: 2rem;
+    align-self: start;
+    gap: 2.25rem;
+    padding: 0 var(--gutter) 0 0;
+    border-bottom: 0;
+  }
+
+  .reader-entries {
+    grid-column: span 9;
+  }
+
+  .filter-search {
+    flex-wrap: wrap;
+  }
+
+  .filter-search button {
+    width: 100%;
+  }
+
+  /* Room to breathe in a column, so chips wrap instead of scrolling, and the
+     tags become a list with their counts aligned. */
+  .chips {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .tag-list {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .tag-list .chip {
+    justify-content: space-between;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    font-size: 0.95rem;
+  }
+
+  .tag-list .chip.current {
+    background: transparent;
+    color: var(--ink);
+    border-bottom-color: var(--ink);
+  }
+
+  .tag-list .chip.current .count {
+    color: var(--accent);
+    opacity: 1;
+  }
 }
 
-.entry-meta,
-.media-placeholder,
-.row p {
-  margin: 0;
+/* ---------------------------------------------------------------- entry */
+
+.entry-cover {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(80vh, 48rem);
+  object-fit: cover;
+  background: var(--tone);
+}
+
+.entry-detail h1 {
+  margin: 2.5rem 0 2rem;
+  font-size: clamp(2.75rem, 9vw, 7.5rem);
+  letter-spacing: -0.05em;
+  line-height: 0.92;
+}
+
+.entry-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem var(--gutter);
+  margin: 0 0 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ink);
+}
+
+.entry-facts div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.entry-facts dt {
   color: var(--muted);
-  font-family: system-ui, sans-serif;
-  font-size: 0.85rem;
+}
+
+.entry-facts dd {
+  margin: 0;
 }
 
 .entry-text {
-  margin-top: 1rem;
+  max-width: 36rem;
   white-space: pre-wrap;
-  font-size: 1.1rem;
+  font-family: var(--serif);
+  font-size: clamp(1.15rem, 1.8vw, 1.35rem);
+  line-height: 1.6;
 }
 
 .entry-text.excerpt {
@@ -402,24 +684,55 @@ input {
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
+  font-size: 1.15rem;
+  line-height: 1.55;
 }
 
-.back-link {
-  display: inline-block;
-  margin-bottom: 3rem;
-  color: var(--muted);
-  font-family: system-ui, sans-serif;
+.contact-sheet {
+  margin-top: 3.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--ink);
 }
 
-.entry-detail h1 {
-  margin-top: 0.5rem;
+.contact-sheet h2 {
+  margin: 0 0 1rem;
 }
+
+@media (min-width: 60rem) {
+  .entry-detail {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+  }
+
+  .entry-detail > * {
+    grid-column: 1 / -1;
+  }
+
+  .entry-detail > h1 {
+    grid-column: 1 / span 10;
+    margin-top: 4.5rem;
+  }
+
+  .entry-facts {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom: 4.5rem;
+  }
+
+  /* The writing sits in the middle of the grid, a measure wide. */
+  .entry-page .entry-text {
+    grid-column: 4 / span 6;
+  }
+}
+
+/* ---------------------------------------------------------------- media */
 
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
-  gap: 0.75rem;
+  gap: 0.375rem;
   margin: 1.5rem 0;
+  counter-reset: frame;
 }
 
 /* Each item is a button so it can be opened full screen, but it must still
@@ -427,18 +740,46 @@ input {
 .media-item {
   position: relative;
   display: block;
+  min-height: 0;
   padding: 0;
   border: 0;
   background: none;
   cursor: zoom-in;
   font: inherit;
   color: inherit;
+  counter-increment: frame;
+}
+
+.media-item:hover {
+  background: none;
+}
+
+/* Numbered like frames on a contact sheet. */
+.media-item::after {
+  content: counter(frame, decimal-leading-zero);
+  position: absolute;
+  left: 0.5rem;
+  bottom: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: rgb(255 255 255 / 0.9);
+  text-shadow: 0 0 4px rgb(0 0 0 / 0.5);
+  pointer-events: none;
 }
 
 .media-item:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 3px;
-  border-radius: 0.8rem;
+  outline-offset: 2px;
+}
+
+.media-item img,
+.media-item video {
+  transition: opacity 0.2s ease;
+}
+
+.media-item:hover img,
+.media-item:hover video {
+  opacity: 0.85;
 }
 
 /* A clip in the grid shows its first frame; this marks it as playable. */
@@ -471,20 +812,37 @@ input {
   width: 100%;
   height: auto;
   max-height: 42rem;
-  border-radius: 0.8rem;
   object-fit: cover;
-  background: color-mix(in srgb, var(--muted) 8%, transparent);
+  background: var(--tone);
 }
 
+/* Two across on a phone, four on anything wider: a cell stays near the 480px
+   the thumbnail provides even at 3x, and the rows keep one rhythm. */
 .photo-grid.compact-photos {
-  /* 10rem keeps at least two per row on a phone, so a cell stays near the
-     480px the thumbnail provides even at 3x. */
-  grid-template-columns: repeat(auto-fit, minmax(min(10rem, 47%), 1fr));
-  margin: 1rem 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
 }
 
-.photo-grid.compact-photos img {
+@media (min-width: 48rem) {
+  .photo-grid.compact-photos {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.photo-grid.compact-photos img,
+.photo-grid.compact-photos video {
   aspect-ratio: 4 / 3;
+}
+
+/* On the entry the sheet holds everything, so the cells stay small and
+   square: auto-fill, so a short sheet does not stretch thumbnails to blur. */
+.contact-sheet .photo-grid.compact-photos {
+  grid-template-columns: repeat(auto-fill, minmax(min(9rem, 30%), 1fr));
+}
+
+.contact-sheet .photo-grid.compact-photos img,
+.contact-sheet .photo-grid.compact-photos video {
+  aspect-ratio: 1;
 }
 
 /* "+29", leading to the entry where they all are. Sized like a thumbnail so
@@ -494,10 +852,9 @@ input {
   align-items: center;
   justify-content: center;
   aspect-ratio: 4 / 3;
-  border-radius: 0.8rem;
-  background: color-mix(in srgb, var(--muted) 14%, transparent);
-  font-family: system-ui, sans-serif;
-  font-size: 1.1rem;
+  background: var(--tone);
+  font-family: var(--mono);
+  font-size: 1rem;
   font-variant-numeric: tabular-nums;
   text-decoration: none;
   color: var(--muted);
@@ -505,27 +862,14 @@ input {
 
 .media-more:hover,
 .media-more:focus-visible {
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
-  color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
 }
 
 /* A clip keeps its own shape: cropping a video to the grid would hide its
    controls, and object-fit does not apply to the control bar. */
 .photo-grid video {
   object-fit: contain;
-}
-
-.reader-paging {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin: 2rem 0 1rem;
-  /* One link alone still sits on the correct side. */
-  flex-wrap: wrap;
-}
-
-.reader-paging a:only-child:last-child {
-  margin-left: auto;
 }
 
 /* Full screen on a phone, an overlay on anything wider. */
@@ -557,10 +901,13 @@ input {
 
 .media-viewer button {
   position: absolute;
+  min-height: 0;
+  padding: 0;
   border: 0;
   background: rgb(0 0 0 / 0.45);
   color: #fff;
-  font-family: system-ui, sans-serif;
+  font-family: var(--sans);
+  font-weight: 400;
   line-height: 1;
   cursor: pointer;
 }
@@ -570,7 +917,6 @@ input {
   right: 0.75rem;
   width: 2.75rem;
   height: 2.75rem;
-  border-radius: 50%;
   font-size: 1.75rem;
 }
 
@@ -579,7 +925,6 @@ input {
   width: 2.75rem;
   height: 4rem;
   transform: translateY(-50%);
-  border-radius: 0.5rem;
   font-size: 2rem;
 }
 
@@ -593,7 +938,7 @@ input {
 
 .media-viewer button:hover,
 .media-viewer button:focus-visible {
-  background: rgb(0 0 0 / 0.7);
+  background: rgb(0 0 0 / 0.75);
 }
 
 @media (min-width: 48rem) {
@@ -601,63 +946,67 @@ input {
     width: min(92vw, 80rem);
     max-width: 92vw;
     height: min(92dvh, 60rem);
-    border-radius: 0.75rem;
     /* Centred, rather than pinned to the top edge as dialogs default to. */
     margin: auto;
   }
 }
 
+/* ------------------------------------------------------------- comments */
+
 /* One flat conversation under an entry. */
 .comments {
   margin-top: 3.5rem;
-  padding-top: 2rem;
-  border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
 }
 
 .comments h2 {
-  margin: 0 0 1.25rem;
-  font-family: system-ui, sans-serif;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--muted);
+  margin: 0 0 1.5rem;
+}
+
+.comments .empty {
+  margin: 0 0 1.5rem;
 }
 
 .comment-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  margin: 0 0 1.75rem;
+  gap: 1.75rem;
+  margin: 0 0 2rem;
   padding: 0;
   list-style: none;
 }
 
 .comment {
-  max-width: 34rem;
-  padding: 0.7rem 0.95rem;
-  border-radius: 0.9rem;
-  background: color-mix(in srgb, var(--muted) 12%, transparent);
+  max-width: 36rem;
 }
 
-/* The owner's replies sit on the other side, so a conversation reads as one. */
+/* The owner's replies step in, so a conversation reads as one. */
 .comment.owner {
-  margin-left: auto;
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  margin-left: clamp(1.5rem, 6vw, 4rem);
+}
+
+.comment.owner .comment-meta strong {
+  color: var(--accent);
 }
 
 .comment-meta {
   display: flex;
-  justify-content: space-between;
   gap: 1rem;
-  margin: 0 0 0.25rem;
-  font-family: system-ui, sans-serif;
-  font-size: 0.72rem;
+  margin: 0 0 0.35rem;
   color: var(--muted);
+}
+
+.comment-meta strong {
+  font-weight: 500;
+  color: var(--ink);
 }
 
 .comment-body {
   margin: 0;
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  line-height: 1.55;
   /* A comment is plain text: keep the writer's line breaks, nothing more. */
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -667,201 +1016,50 @@ input {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.6rem;
+  gap: 0.75rem;
+  max-width: 36rem;
 }
 
 .comment-form textarea {
-  width: 100%;
-  padding: 0.7rem 0.9rem;
-  border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent);
-  border-radius: 0.6rem;
-  background: transparent;
-  color: inherit;
-  font: inherit;
+  font-family: var(--serif);
+  font-size: 1.15rem;
   resize: vertical;
 }
 
-.comment-form button {
-  padding: 0.5rem 1.1rem;
-  border: 0;
-  border-radius: 0.5rem;
-  background: var(--accent);
-  color: var(--paper);
-  font-family: system-ui, sans-serif;
-  font-size: 0.88rem;
-  cursor: pointer;
-}
+@media (min-width: 60rem) {
+  .entry-page .comments {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--gutter);
+  }
 
-.comment-form button[disabled] {
-  opacity: 0.6;
-}
+  .entry-page .comments > h2 {
+    grid-column: 1 / span 3;
+  }
 
-/* A month of days that actually have entries, rather than a full calendar
-   grid of mostly empty cells. */
-.day-month {
-  margin-top: 1.5rem;
-}
-
-.day-month h3 {
-  margin: 0 0 0.6rem;
-  font-family: system-ui, sans-serif;
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.day-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.day-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  min-width: 2.4rem;
-  padding: 0.35rem 0.6rem;
-  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
-  border-radius: 0.5rem;
-  font-family: system-ui, sans-serif;
-  font-size: 0.9rem;
-  font-variant-numeric: tabular-nums;
-  text-decoration: none;
-  justify-content: center;
-}
-
-.day-chip:hover,
-.day-chip:focus-visible {
-  border-color: var(--accent);
-}
-
-.day-chip .count {
-  padding: 0 0.3rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
-  font-size: 0.72rem;
-}
-
-.panel-note {
-  margin: 0;
-  font-family: system-ui, sans-serif;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-/* The two languages side by side on a wide screen, stacked on a phone. */
-.edit-columns {
-  display: grid;
-  gap: 1.5rem;
-}
-
-@media (min-width: 52rem) {
-  .edit-columns {
-    grid-template-columns: 1fr 1fr;
+  .entry-page .comments > :not(h2) {
+    grid-column: 4 / span 6;
   }
 }
 
-.edit-text fieldset {
-  margin: 0;
-  padding: 1rem;
-  border: 1px solid color-mix(in srgb, var(--ink) 15%, transparent);
-  border-radius: 0.6rem;
+/* ---------------------------------------------------------------- owner */
+
+.reader-header,
+.dashboard-header {
+  margin-bottom: 3rem;
 }
 
-.edit-text legend {
-  padding: 0 0.4rem;
-  font-family: system-ui, sans-serif;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.edit-text label {
-  display: block;
-  margin: 0.9rem 0 0.3rem;
-  font-family: system-ui, sans-serif;
-  font-size: 0.78rem;
-  color: var(--muted);
-}
-
-.edit-text input,
-.edit-text textarea,
-.edit-text select {
-  width: 100%;
-  padding: 0.55rem 0.7rem;
-  border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent);
-  border-radius: 0.45rem;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 0.95rem;
-}
-
-.edit-text textarea {
-  resize: vertical;
-}
-
-.edit-text > button {
-  margin-top: 1rem;
-  padding: 0.55rem 1.2rem;
-  border: 0;
-  border-radius: 0.5rem;
-  background: var(--accent);
-  color: var(--paper);
-  font-family: system-ui, sans-serif;
-  cursor: pointer;
-}
-
-.edit-text > button[disabled] {
-  opacity: 0.6;
-}
-
-.panel-note.warning {
-  color: var(--accent);
-}
-
-.form-saved {
-  margin: 0.75rem 0 0;
-  font-family: system-ui, sans-serif;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-/* A quiet close to the page: present, not competing with the writing. */
-.site-footer {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.5rem 1.5rem;
-  margin-top: 4rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
-  font-family: system-ui, sans-serif;
-  font-size: 0.78rem;
-  color: var(--muted);
-}
-
-.site-footer p {
-  margin: 0;
-}
-
-.media-placeholder {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  border-radius: 0.75rem;
-  background: color-mix(in srgb, var(--muted) 8%, transparent);
+.dashboard {
+  padding-top: 2rem;
 }
 
 .dashboard-header {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 1rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--ink);
 }
 
 .dashboard-header h1 {
@@ -871,19 +1069,61 @@ input {
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
-  gap: 1rem;
+  gap: var(--gutter);
   margin-top: 1rem;
 }
 
 .panel {
-  padding: 1.5rem;
-  border: 1px solid color-mix(in srgb, var(--muted) 22%, transparent);
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--paper) 96%, var(--ink));
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--ink);
+}
+
+.entry-card h2,
+.panel h2 {
+  line-height: 1.1;
+}
+
+.panel h2 {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.panel-note {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.panel-note.warning {
+  color: var(--accent);
 }
 
 .rows {
   display: grid;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-top: 1px solid var(--rule);
+}
+
+.row p,
+.media-placeholder {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.media-placeholder {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--tone);
 }
 
 .owner-entries {
@@ -893,7 +1133,7 @@ input {
 
 .owner-entry {
   padding-top: 1.25rem;
-  border-top: 1px solid color-mix(in srgb, var(--muted) 18%, transparent);
+  border-top: 1px solid var(--rule);
 }
 
 .owner-entry-heading {
@@ -908,35 +1148,27 @@ input {
   margin: 0;
 }
 
+.owner-entry-heading h3 {
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
 .owner-entry-heading p {
   color: var(--muted);
-  font-family: system-ui, sans-serif;
   font-size: 0.85rem;
 }
 
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.9rem 0;
-  border-top: 1px solid color-mix(in srgb, var(--muted) 18%, transparent);
-}
-
 .badge {
-  border-radius: 999px;
-  padding: 0.2rem 0.55rem;
-  font-family: system-ui, sans-serif;
-  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid currentColor;
+  font-size: 0.68rem;
 }
 
 .badge.shared {
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
   color: var(--accent);
 }
 
 .badge.private {
-  background: color-mix(in srgb, var(--muted) 12%, transparent);
   color: var(--muted);
 }
 
@@ -952,17 +1184,110 @@ fieldset {
   margin-top: 0.5rem;
 }
 
-.check-grid label {
-  font-family: system-ui, sans-serif;
-}
-
 .check-grid input {
   width: auto;
 }
 
 .invite-created {
-  padding-left: 1rem;
-  border-left: 2px solid var(--accent);
+  padding: 1rem;
+  background: var(--tone);
+}
+
+/* A month of days that actually have entries, rather than a full calendar
+   grid of mostly empty cells. */
+.day-month {
+  margin-top: 1.5rem;
+}
+
+.day-month h3 {
+  margin: 0 0 0.6rem;
+  color: var(--muted);
+}
+
+.day-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.day-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+
+.day-chip:hover,
+.day-chip:focus-visible {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.day-chip .count {
+  color: var(--accent);
+  font-size: 0.7rem;
+}
+
+/* The two languages side by side on a wide screen, stacked on a phone. */
+.edit-columns {
+  display: grid;
+  gap: var(--gutter);
+}
+
+@media (min-width: 52rem) {
+  .edit-columns {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.edit-text fieldset {
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--ink);
+}
+
+.edit-text legend {
+  padding: 0 0.5rem 0 0;
+  color: var(--muted);
+}
+
+.edit-text label {
+  display: block;
+  margin: 1rem 0 0.2rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.edit-text select {
+  width: 100%;
+  padding: 0.6rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  background: transparent;
+  color: inherit;
+}
+
+.edit-text textarea {
+  resize: vertical;
+  font-family: var(--serif);
+  font-size: 1.05rem;
+}
+
+.edit-text > button {
+  margin-top: 1.25rem;
+}
+
+.form-saved {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 @media (max-width: 700px) {
@@ -970,12 +1295,13 @@ fieldset {
     grid-template-columns: 1fr;
   }
 
-  .reader,
-  .dashboard {
-    padding-top: 2rem;
-  }
-
   .row {
     align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
   }
 }

@@ -79,24 +79,30 @@ export default async function ReadPage({ searchParams }: Props) {
             const { title, text } = entryTextFor(language, entry);
             return (
               <article className="entry-card" key={entry.id}>
+                {/* The facts in a column of their own, like a logbook's margin. */}
                 <p className="entry-meta">
-                  {formatDay(entry.day, language)}
-                  {entry.place_name ? ` · ${entry.place_name}` : ""}
+                  <span>{formatDay(entry.day, language)}</span>
+                  {entry.place_name && <span>{entry.place_name}</span>}
+                  {entry.tags.length > 0 && (
+                    <span className="quiet">{entry.tags.map((tag) => tag.name).join(" · ")}</span>
+                  )}
                 </p>
-                <h2><Link href={`/read/${entry.id}`}>{title || strings.untitledEntry}</Link></h2>
-                <MediaGrid
-                  compact
-                  entryId={entry.id}
-                  language={language}
-                  media={entry.media}
-                  moreHref={`/read/${entry.id}`}
-                  previewLimit={PREVIEW_MEDIA}
-                />
-                {text && <div className="entry-text excerpt">{text}</div>}
-                {/* The title is a link, but nothing said so. This does. */}
-                <p className="entry-more">
-                  <Link href={`/read/${entry.id}`}>{strings.readEntry} →</Link>
-                </p>
+                <div className="entry-card-body">
+                  <h2><Link href={`/read/${entry.id}`}>{title || strings.untitledEntry}</Link></h2>
+                  <MediaGrid
+                    compact
+                    entryId={entry.id}
+                    language={language}
+                    media={entry.media}
+                    moreHref={`/read/${entry.id}`}
+                    previewLimit={PREVIEW_MEDIA}
+                  />
+                  {text && <div className="entry-text excerpt">{text}</div>}
+                  {/* The title is a link, but nothing said so. This does. */}
+                  <p className="entry-more">
+                    <Link href={`/read/${entry.id}`}>{strings.readEntry} →</Link>
+                  </p>
+                </div>
               </article>
             );
           })}
