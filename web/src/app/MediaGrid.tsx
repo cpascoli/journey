@@ -45,13 +45,17 @@ export function MediaGrid({
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   const shownCount = previewLimit === undefined ? media.length : Math.min(previewLimit, media.length);
+  // When some are left over, the last cell shown leads to the entry instead
+  // of opening, so the viewer steps through one fewer.
+  const overflows = moreHref !== undefined && media.length > shownCount;
+  const openableCount = overflows ? shownCount - 1 : shownCount;
   const close = useCallback(() => setOpenIndex(null), []);
   const step = useCallback(
     (by: number) =>
       setOpenIndex((current) =>
-        current === null ? null : (current + by + shownCount) % shownCount,
+        current === null ? null : (current + by + openableCount) % openableCount,
       ),
-    [shownCount],
+    [openableCount],
   );
 
   useEffect(() => {
@@ -79,18 +83,20 @@ export function MediaGrid({
   // listing is a page nobody asked to load.
   const shown = previewLimit === undefined ? media : media.slice(0, previewLimit);
   const hidden = media.length - shown.length;
+  const openable = overflows ? shown.slice(0, -1) : shown;
+  const last = shown[shown.length - 1];
   const source = (item: Media) => `/media/${entryId}/${encodeURIComponent(item.key)}`;
   // The grid shows the small copy; opening an item loads the original. Media
   // published before thumbnails existed falls back to the original here.
   const preview = (item: Media) => `${source(item)}?size=thumb`;
-  const open = openIndex === null ? null : shown[openIndex];
+  const open = openIndex === null ? null : openable[openIndex];
   const label = (item: Media, index: number) =>
     item.kind === "video" ? strings.videoAlt(index + 1) : strings.photoAlt(index + 1);
 
   return (
     <>
       <div className={`photo-grid${compact ? " compact-photos" : ""}`}>
-        {shown.map((item, index) => (
+        {openable.map((item, index) => (
           <button
             aria-label={`${label(item, index)} — ${strings.openMedia}`}
             className="media-item"
@@ -119,9 +125,19 @@ export function MediaGrid({
             )}
           </button>
         ))}
-        {hidden > 0 && moreHref && (
-          <Link aria-label={strings.seeAllMedia(media.length)} className="media-more" href={moreHref}>
-            {strings.moreMedia(hidden)}
+        {/* "+29" over the last thumbnail, rather than a tile of its own that
+            wrapped onto a row by itself. It leads to the entry, where they
+            all are. */}
+        {overflows && moreHref && last && (
+          <Link aria-label={strings.seeAllMedia(media.length)} className="media-item media-more" href={moreHref}>
+            {last.kind === "video" ? (
+              <video aria-hidden="true" muted playsInline preload="metadata">
+                <source src={source(last)} type="video/mp4" />
+              </video>
+            ) : (
+              <img alt="" decoding="async" loading="lazy" src={preview(last)} />
+            )}
+            <span aria-hidden="true" className="media-more-count">{strings.moreMedia(hidden)}</span>
           </Link>
         )}
       </div>
@@ -140,7 +156,7 @@ export function MediaGrid({
             <button aria-label={strings.closeMedia} className="viewer-close" onClick={close} type="button">
               ×
             </button>
-            {shown.length > 1 && (
+            {openable.length > 1 && (
               <>
                 <button aria-label="‹" className="viewer-step previous" onClick={() => step(-1)} type="button">
                   ‹

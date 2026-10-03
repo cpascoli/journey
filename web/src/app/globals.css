@@ -844,25 +844,39 @@ textarea:focus-visible {
   aspect-ratio: 1;
 }
 
-/* "+29", leading to the entry where they all are. Sized like a thumbnail so
-   the grid keeps its rhythm. */
+/* "+29" over the last thumbnail, leading to the entry where they all are.
+   It takes the last cell of the row rather than wrapping onto a row alone. */
 .media-more {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.media-more::after {
+  content: none;
+}
+
+.media-more-count {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 4 / 3;
-  background: var(--tone);
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
   font-family: var(--mono);
-  font-size: 1rem;
+  font-size: clamp(1rem, 2.4vw, 1.4rem);
   font-variant-numeric: tabular-nums;
-  text-decoration: none;
-  color: var(--muted);
+  transition: background 0.2s ease;
 }
 
-.media-more:hover,
-.media-more:focus-visible {
-  background: var(--ink);
-  color: var(--paper);
+.media-more:hover .media-more-count,
+.media-more:focus-visible .media-more-count {
+  background: rgb(0 0 0 / 0.7);
+}
+
+.media-more:hover img,
+.media-more:hover video {
+  opacity: 1;
 }
 
 /* A clip keeps its own shape: cropping a video to the grid would hide its
