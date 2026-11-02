@@ -1,11 +1,77 @@
 import AVFoundation
 import Photos
 import UIKit
+import UniformTypeIdentifiers
 
 enum PhotoLibrary {
     static func requestAccess() async -> Bool {
         let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
         return status == .authorized || status == .limited
+    }
+
+    enum ImportError: LocalizedError {
+        case unsupported(String)
+        case failed(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .unsupported(let name): "“\(name)” isn't a photo or video."
+            case .failed(let name): "“\(name)” could not be added to your photo library."
+            }
+        }
+    }
+
+    /// Adds files picked outside the library (Files, iCloud Drive, a USB
+    /// drive) to the Photos library and returns their identifiers, in order.
+    ///
+    /// Entries only ever refer to Photos assets, so a file has to become one
+    /// first: that keeps publishing, thumbnails and media keys unchanged. The
+    /// file is copied, so the original stays where it was.
+    nonisolated static func importFiles(_ urls: [URL]) async throws -> [String] {
+        var identifiers: [String] = []
+        for url in urls {
+            let isScoped = url.startAccessingSecurityScopedResource()
+            defer { if isScoped { url.stopAccessingSecurityScopedResource() } }
+            let name = url.lastPathComponent
+            let type = (try? url.resourceValues(forKeys: [.contentTypeKey]))?.contentType
+                ?? UTType(filenameExtension: url.pathExtension)
+            let resourceType: PHAssetResourceType
+            if type?.conforms(to: .image) == true {
+                resourceType = .photo
+            } else if type?.conforms(to: .movie) == true {
+                resourceType = .video
+            } else {
+                throw ImportError.unsupported(name)
+            }
+            // Photos takes ownership of the file it is given, so hand it a copy.
+            let copy = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString)
+                .appendingPathExtension(url.pathExtension)
+            try FileManager.default.copyItem(at: url, to: copy)
+            let created = CreatedAsset()
+            do {
+                try await PHPhotoLibrary.shared().performChanges {
+                    let request = PHAssetCreationRequest.forAsset()
+                    let options = PHAssetResourceCreationOptions()
+                    options.originalFilename = name
+                    options.shouldMoveFile = true
+                    request.addResource(with: resourceType, fileURL: copy, options: options)
+                    created.identifier = request.placeholderForCreatedAsset?.localIdentifier
+                }
+            } catch {
+                try? FileManager.default.removeItem(at: copy)
+                throw ImportError.failed(name)
+            }
+            guard let identifier = created.identifier else { throw ImportError.failed(name) }
+            identifiers.append(identifier)
+        }
+        return identifiers
+    }
+
+    /// Carries the placeholder's identifier out of the change block, which
+    /// Photos runs on its own queue.
+    private final class CreatedAsset: @unchecked Sendable {
+        nonisolated(unsafe) var identifier: String?
     }
 
     static func assets(on day: Date) -> [PHAsset] {

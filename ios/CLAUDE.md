@@ -60,7 +60,10 @@ xcodebuild test -project Journey.xcodeproj -scheme Journey \
   (`648691b`, the first with bundle ID `com.carlopascoli.journey`), create data
   with it on a simulator, install the new build over it, and check the data is
   still there.
-- Media is never copied: entries store Photos `localIdentifier`s. Their order
+- Media is never copied: entries store Photos `localIdentifier`s. A file
+  picked from Files (*Import from Files*) is first added to the Photos library
+  by `PhotoLibrary.importFiles`, and the entry refers to that asset, so
+  publishing, thumbnails and media keys have one source. Their order
   is the order of `mediaAssetIDs`, which the website turns into `sort_order`,
   so reordering republishes without re-uploading. The editor lists them as
   ordinary rows with `.onDelete` and `.onMove`, so removing and reordering

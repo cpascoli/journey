@@ -2,6 +2,7 @@ import PhotosUI
 import SwiftData
 import SwiftUI
 import Translation
+import UniformTypeIdentifiers
 
 struct EntryDraft: Identifiable {
     let id = UUID()
@@ -111,6 +112,8 @@ struct EntryEditorView: View {
     @State private var hasUnsavedChanges = false
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var isPickingDayPhotos = false
+    @State private var isImportingFiles = false
+    @State private var importError: String?
     /// The item being looked at full screen, if any.
     @State private var preview: MediaViewerRequest?
     /// The saved entry whose publish sheet is open.
@@ -226,6 +229,24 @@ struct EntryEditorView: View {
                 draft.assetIDs.append(contentsOf: newIDs)
                 pickerItems = []
             }
+            .fileImporter(
+                isPresented: $isImportingFiles,
+                allowedContentTypes: [.image, .movie],
+                allowsMultipleSelection: true
+            ) { result in
+                switch result {
+                case .success(let urls): importFiles(urls)
+                case .failure(let error): importError = error.localizedDescription
+                }
+            }
+            .alert("Couldn’t Import", isPresented: Binding(
+                get: { importError != nil },
+                set: { if !$0 { importError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(importError ?? "")
+            }
             .sheet(isPresented: $isPickingDayPhotos) {
                 DayPhotoPicker(
                     day: draft.date,
@@ -244,6 +265,25 @@ struct EntryEditorView: View {
                 flushSave()
                 Task { await dictation.stop() }
             }
+        }
+    }
+
+    /// Files become Photos assets first (see `PhotoLibrary.importFiles`), then
+    /// attach like any other photo. Whatever was imported before a failure
+    /// is kept, so a bad file in a batch doesn't lose the good ones.
+    private func importFiles(_ urls: [URL]) {
+        Task {
+            var imported: [String] = []
+            var failure: String?
+            do {
+                for url in urls {
+                    imported += try await PhotoLibrary.importFiles([url])
+                }
+            } catch {
+                failure = error.localizedDescription
+            }
+            draft.assetIDs.append(contentsOf: imported.filter { !draft.assetIDs.contains($0) })
+            importError = failure
         }
     }
 
@@ -364,6 +404,11 @@ struct EntryEditorView: View {
                 photoLibrary: .shared()
             ) {
                 Label("Browse All Photos", systemImage: "photo.on.rectangle.angled")
+            }
+            Button {
+                isImportingFiles = true
+            } label: {
+                Label("Import from Files", systemImage: "folder")
             }
         } header: {
             HStack {
