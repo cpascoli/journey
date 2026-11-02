@@ -64,6 +64,36 @@ struct EntryDraft: Identifiable {
     var originalTexts: EntryTranslator.Texts {
         EntryTranslator.Texts(title: title, body: body, narrative: narrative)
     }
+
+    /// Everything the user can change, as a value: the editor saves whenever
+    /// it differs from the last one, so an untouched draft is never written.
+    struct Snapshot: Hashable {
+        var title, body, placeName, narrative, sourcedNarrative: String
+        var translationLanguage, translatedTitle, translatedBody, translatedNarrative: String
+        var date: Date
+        var latitude, longitude: Double?
+        var assetIDs: [String]
+        var narrativeSource: NarrativeSource
+        var tagIDs: [UUID]
+    }
+
+    var snapshot: Snapshot {
+        Snapshot(
+            title: title, body: body, placeName: placeName, narrative: narrative, sourcedNarrative: sourcedNarrative,
+            translationLanguage: translationLanguage, translatedTitle: translatedTitle,
+            translatedBody: translatedBody, translatedNarrative: translatedNarrative,
+            date: date, latitude: latitude, longitude: longitude, assetIDs: assetIDs,
+            narrativeSource: narrativeSource, tagIDs: tags.map(\.id)
+        )
+    }
+
+    /// Whether there is anything worth publishing yet.
+    var hasContent: Bool {
+        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !narrative.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !assetIDs.isEmpty
+    }
 }
 
 struct EntryEditorView: View {
@@ -72,7 +102,13 @@ struct EntryEditorView: View {
     }
 
     let journal: Journal
+    /// Whether the sheet opened on a new entry; the title keeps saying so even
+    /// once autosave has stored it.
+    private let startedAsNew: Bool
     @State private var draft: EntryDraft
+    /// The debounced autosave waiting to run, if any.
+    @State private var pendingSave: Task<Void, Never>?
+    @State private var hasUnsavedChanges = false
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var isPickingDayPhotos = false
     /// The item being looked at full screen, if any.
@@ -96,6 +132,7 @@ struct EntryEditorView: View {
     init(draft: EntryDraft, journal: Journal) {
         _draft = State(initialValue: draft)
         self.journal = journal
+        startedAsNew = draft.entry == nil
     }
 
     var body: some View {
@@ -120,9 +157,8 @@ struct EntryEditorView: View {
                 mediaSection
                 storySection
                 translationSection
-                publishSection
             }
-            .navigationTitle(draft.entry == nil ? "New Entry" : "Edit Entry")
+            .navigationTitle(startedAsNew ? "New Entry" : "Edit Entry")
             .navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(item: $preview) { request in
                 MediaViewer(ids: request.ids, start: request.start)
@@ -130,19 +166,26 @@ struct EntryEditorView: View {
             .sheet(item: $publishing) { entry in
                 PublishSheet(entry: entry)
             }
+            // Edits are saved as they are made, so there is nothing to confirm
+            // on the way out: Done closes, and the trailing action is the one
+            // that normally follows an edit — publishing.
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("Done") {
+                        flushSave()
+                        dismiss()
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button("Publish") {
+                        pendingSave?.cancel()
                         do {
-                            try save()
-                            dismiss()
+                            publishing = try save()
                         } catch {
                             saveError = "Your entry could not be saved. \(error.localizedDescription)"
                         }
                     }
+                    .disabled(!draft.hasContent)
                 }
                 ToolbarItemGroup(placement: .keyboard) {
                     Menu {
@@ -193,9 +236,42 @@ struct EntryEditorView: View {
             .translationTask(translationConfig) { session in
                 await translate(with: session)
             }
+            .onChange(of: draft.snapshot) { _, _ in
+                scheduleSave()
+            }
             .onDisappear {
+                // Also covers a swipe-down dismissal, which skips Done.
+                flushSave()
                 Task { await dictation.stop() }
             }
+        }
+    }
+
+    /// Saves shortly after the last edit, so a sentence being typed is
+    /// written once rather than at every keystroke.
+    private func scheduleSave() {
+        hasUnsavedChanges = true
+        pendingSave?.cancel()
+        pendingSave = Task {
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+            autosave()
+        }
+    }
+
+    private func flushSave() {
+        pendingSave?.cancel()
+        pendingSave = nil
+        if hasUnsavedChanges {
+            autosave()
+        }
+    }
+
+    private func autosave() {
+        do {
+            try save()
+        } catch {
+            saveError = "Your entry could not be saved. \(error.localizedDescription)"
         }
     }
 
@@ -255,29 +331,6 @@ struct EntryEditorView: View {
             }
         }
     }
-
-    /// Publishing from where the writing happens, rather than only from the
-    /// calendar. The entry is saved first: the publish sheet works on what is
-    /// stored, so it must not be looking at a draft that has not been written.
-    private var publishSection: some View {
-        Section {
-            Button {
-                do {
-                    publishing = try save()
-                } catch {
-                    saveError = "Your entry could not be saved. \(error.localizedDescription)"
-                }
-            } label: {
-                Label(isPublished ? "Save & Update Website" : "Save & Publish…", systemImage: "globe")
-            }
-        } footer: {
-            Text(isPublished
-                ? "Saves this entry, then sends the changes to the website."
-                : "Saves this entry, then asks who may read it before anything goes online.")
-        }
-    }
-
-    private var isPublished: Bool { draft.entry?.isPublicationBound ?? false }
 
     private var mediaSection: some View {
         Section {
@@ -521,6 +574,8 @@ struct EntryEditorView: View {
             entry = Entry()
             context.insert(entry)
             entry.journal = journal
+            // Later saves (and the publish sheet) must reach this same entry.
+            draft.entry = entry
         }
         let place = draft.placeName.trimmingCharacters(in: .whitespacesAndNewlines)
         entry.title = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -549,6 +604,7 @@ struct EntryEditorView: View {
             entry.publishStatus = .needsUpdate
         }
         try context.save()
+        hasUnsavedChanges = false
         if let latitude = entry.latitude, let longitude = entry.longitude {
             let cache = try EntryMetadataCache.findOrCreate(for: entry.id, in: context)
             Task {

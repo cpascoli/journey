@@ -68,7 +68,7 @@ final class DemoWalkthrough: XCTestCase {
         notes.tap()
         notes.typeText("Climbed the central prang before the crowds.")
         beat(1.0)
-        app.buttons["Save"].tap()
+        app.buttons["Done"].tap()
         beat(2.2)
 
         // 4. Read the day back as a journal page, and open its photos full screen.

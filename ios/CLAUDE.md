@@ -147,10 +147,14 @@ xcodebuild test -project Journey.xcodeproj -scheme Journey \
 - A video goes straight from the phone to the object store with a signed URL
   (`JourneyAPI.putVideo`), because a Netlify request body caps at 6 MB. The
   owner key is never sent to the store.
-- The editor can publish directly (`publishSection`), not only the journal
+- The editor has no Save button: edits are autosaved about a second after
+  the last change (`EntryDraft.snapshot` is what "a change" means, so an
+  untouched draft is never written and a new entry is only created once
+  something is typed or attached). *Done* flushes and closes; there is no
+  discard. *Publish* is the trailing toolbar action, not only the journal
   page's globe. It saves first and hands the stored `Entry` to `PublishSheet`,
   which must never be given an unsaved draft — hence `save()` returning the
-  entry.
+  entry, and `save()` setting `draft.entry` so a new entry is not created twice.
 - `PublishSheet` saves visibility and location precision only when *Publish*
   is tapped: a wider audience never takes effect implicitly. Precision
   `hidden` sends no location at all.
