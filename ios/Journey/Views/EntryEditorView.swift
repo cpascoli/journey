@@ -200,11 +200,9 @@ struct EntryEditorView: View {
     }
 
     private var tagsSection: some View {
-        Section("Tags") {
-            if allTags.isEmpty {
-                Text("Create tags in Settings to label entries.")
-                    .foregroundStyle(.secondary)
-            } else {
+        let suggestions = Tag.missingSuggestions(given: allTags)
+        return Section("Tags") {
+            if !allTags.isEmpty {
                 FlowLayout {
                     ForEach(allTags) { tag in
                         let isSelected = draft.tags.contains { $0.id == tag.id }
@@ -222,6 +220,38 @@ struct EntryEditorView: View {
                     }
                 }
                 .padding(.vertical, 4)
+            }
+            if !suggestions.isEmpty {
+                // Starter tags that don't exist yet. One tap creates the tag
+                // and puts it on this entry, so there's no detour via Settings.
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Suggested")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    FlowLayout {
+                        ForEach(suggestions, id: \.name) { suggestion in
+                            Button {
+                                let tag = Tag(name: suggestion.name, color: suggestion.color)
+                                context.insert(tag)
+                                draft.tags.append(tag)
+                            } label: {
+                                HStack(spacing: 3) {
+                                    Image(systemName: "plus")
+                                        .font(.caption2.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                    TagChip(name: suggestion.name, color: suggestion.color, isSelected: false)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Add \(suggestion.name) tag")
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            if allTags.isEmpty && suggestions.isEmpty {
+                Text("Create tags in Settings to label entries.")
+                    .foregroundStyle(.secondary)
             }
         }
     }

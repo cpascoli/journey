@@ -156,7 +156,7 @@ struct SettingsView: View {
             Button("New Tag", systemImage: "plus") {
                 tagSheet = TagSheet(tag: nil)
             }
-            if tags.isEmpty {
+            if !Tag.missingSuggestions(given: tags).isEmpty {
                 Button("Add Suggested Tags", systemImage: "wand.and.stars", action: addSuggestedTags)
             }
         } header: {
@@ -180,12 +180,8 @@ struct SettingsView: View {
     }
 
     private func addSuggestedTags() {
-        let suggestions: [(String, TagColor)] = [
-            ("Family", .pink), ("Friends", .blue), ("Sport", .green), ("Clubbing", .purple), ("Dating", .red),
-            ("Culture", .indigo), ("Thoughts", .teal), ("Work", .brown),
-        ]
-        for (name, color) in suggestions {
-            context.insert(Tag(name: name, color: color))
+        for suggestion in Tag.missingSuggestions(given: tags) {
+            context.insert(Tag(name: suggestion.name, color: suggestion.color))
         }
     }
 

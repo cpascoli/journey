@@ -20,6 +20,22 @@ extension TagColor {
     }
 }
 
+extension Tag {
+    /// Starter tags offered wherever tags are picked, so a label doesn't
+    /// have to be set up in Settings before an entry can use it.
+    static let suggestions: [(name: String, color: TagColor)] = [
+        ("Family", .pink), ("Friends", .blue), ("Sport", .green), ("Clubbing", .purple), ("Dating", .red),
+        ("Culture", .indigo), ("Thoughts", .teal), ("Work", .brown),
+    ]
+
+    /// The suggestions whose name isn't taken yet (names are unique, ignoring case).
+    static func missingSuggestions(given existing: [Tag]) -> [(name: String, color: TagColor)] {
+        suggestions.filter { suggestion in
+            !existing.contains { $0.name.caseInsensitiveCompare(suggestion.name) == .orderedSame }
+        }
+    }
+}
+
 extension Entry {
     var sortedTags: [Tag] {
         (tags ?? []).sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
