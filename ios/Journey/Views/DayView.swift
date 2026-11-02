@@ -11,6 +11,7 @@ struct DayView: View {
     @State private var assets: [PHAsset] = []
     @State private var editorDraft: EntryDraft?
     @State private var publishedToDelete: Entry?
+    @State private var viewer: MediaViewerRequest?
     @Environment(LocationService.self) private var location
     @Environment(\.modelContext) private var context
 
@@ -64,14 +65,21 @@ struct DayView: View {
             if !timeline.stops.isEmpty {
                 Section("Places") {
                     ForEach(timeline.stops) { stop in
-                        StopRow(stop: stop) { editorDraft = EntryDraft(stop: stop) }
+                        StopRow(
+                            stop: stop,
+                            onWrite: { editorDraft = EntryDraft(stop: stop) },
+                            // Full size, so a photo can be studied before writing about it.
+                            onOpenMedia: { viewer = MediaViewerRequest(ids: stop.assetIDs, start: $0) }
+                        )
                     }
                 }
             }
 
             if !timeline.looseAssetIDs.isEmpty {
                 Section("Other photos & videos") {
-                    AssetStrip(ids: timeline.looseAssetIDs)
+                    AssetStrip(ids: timeline.looseAssetIDs) {
+                        viewer = MediaViewerRequest(ids: timeline.looseAssetIDs, start: $0)
+                    }
                 }
             }
         }
@@ -95,6 +103,9 @@ struct DayView: View {
         }
         .sheet(item: $editorDraft) { draft in
             EntryEditorView(draft: draft, journal: journal)
+        }
+        .fullScreenCover(item: $viewer) { request in
+            MediaViewer(ids: request.ids, start: request.start)
         }
         .alert(
             "Unpublish It First",
@@ -177,6 +188,7 @@ private struct EntryRow: View {
 private struct StopRow: View {
     let stop: DayTimeline.Stop
     let onWrite: () -> Void
+    let onOpenMedia: (String) -> Void
 
     private var timeRange: String {
         let visit = stop.visit
@@ -207,7 +219,7 @@ private struct StopRow: View {
                     .buttonStyle(.borderless)
             }
             if !stop.assetIDs.isEmpty {
-                AssetStrip(ids: stop.assetIDs)
+                AssetStrip(ids: stop.assetIDs, onOpen: onOpenMedia)
             }
         }
     }

@@ -42,11 +42,24 @@ struct AssetThumbnail: View {
 struct AssetStrip: View {
     let ids: [String]
     var size: CGFloat = 72
+    /// Called with the tapped item's identifier. Without it the strip is a
+    /// plain preview, so a row that is itself a button keeps its single tap.
+    var onOpen: ((String) -> Void)?
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             LazyHStack(spacing: 6) {
-                ForEach(ids, id: \.self) { AssetThumbnail(localIdentifier: $0, size: size) }
+                ForEach(ids, id: \.self) { id in
+                    if let onOpen {
+                        Button { onOpen(id) } label: {
+                            AssetThumbnail(localIdentifier: id, size: size)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Open full screen")
+                    } else {
+                        AssetThumbnail(localIdentifier: id, size: size)
+                    }
+                }
             }
         }
         .frame(height: size)
