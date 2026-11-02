@@ -53,8 +53,14 @@ struct PublishSheet: View {
 
     init(entry: Entry) {
         self.entry = entry
-        _visibility = State(initialValue: entry.visibility)
-        _precision = State(initialValue: entry.sharedLocationPrecision)
+        // A first publish starts at the usual choice — readers you invite, at
+        // the exact place — rather than at the model's "only me" default.
+        // Nothing is stored until Publish is tapped, so the wider audience is
+        // still a deliberate act, and an entry that is already online keeps
+        // what it was published with.
+        let isFirstPublish = !entry.isPublicationBound
+        _visibility = State(initialValue: isFirstPublish ? .invites : entry.visibility)
+        _precision = State(initialValue: isFirstPublish ? .exact : entry.sharedLocationPrecision)
     }
 
     private var isPublished: Bool { entry.isPublicationBound }

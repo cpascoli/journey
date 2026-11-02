@@ -35,7 +35,8 @@ final class Entry {
     /// The immutable publishing destination while this entry exists online or has queued work.
     var publishDestinationID: UUID?
     var sharedLocationPrecisionRaw: String = LocationPrecision.city.rawValue
-    // Who can read the entry on the website once it's published. Only you until you choose otherwise.
+    // Who can read the entry on the website once it's published. Stored as "only you"
+    // until a publish says otherwise; the publish sheet proposes invites for a first publish.
     var visibilityRaw: String = EntryVisibility.onlyMe.rawValue
 
     var journal: Journal?

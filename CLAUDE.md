@@ -35,7 +35,8 @@ Decisions already made, so new work fits them:
   it to read entries and submit narrative *proposals* tied to the revision
   they're based on. The app accepts or rejects them; only accepted text is
   ever public. The GPT's token must not be able to delete or publish.
-- Published locations default to city level.
+- The publish sheet proposes "people you invite" and the exact location for
+  a first publish; a stored entry stays "only me" / city until it is published.
 - A ChatGPT subscription gives no API access, so nothing in the project calls
   OpenAI.
 
