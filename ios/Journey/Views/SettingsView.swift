@@ -182,6 +182,7 @@ struct SettingsView: View {
     private func addSuggestedTags() {
         let suggestions: [(String, TagColor)] = [
             ("Family", .pink), ("Friends", .blue), ("Sport", .green), ("Clubbing", .purple), ("Dating", .red),
+            ("Culture", .indigo), ("Thoughts", .teal), ("Work", .brown),
         ]
         for (name, color) in suggestions {
             context.insert(Tag(name: name, color: color))
