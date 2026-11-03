@@ -26,20 +26,53 @@ jobs:
         working-directory: ios
     steps:
       - uses: actions/checkout@v4
+      # The newest stable Xcode on the image, not a pinned point release: a
+      # pinned Xcode stops matching the image's simulator runtime when the
+      # image is updated, and the tests then have no device to run on.
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: "26.2"
+          xcode-version: latest-stable
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Regenerate project
         run: |
           xcodegen generate
           git diff --exit-code -- Journey.xcodeproj
+      # Any available iPhone simulator, by id: device names change with each
+      # image. If the image has no usable iOS runtime, download one.
+      - name: Pick a simulator
+        id: simulator
+        run: |
+          pick() {
+            xcrun simctl list devices available --json | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          for runtime in sorted(devices, reverse=True):
+              if "iOS" not in runtime:
+                  continue
+              for device in devices[runtime]:
+                  if device["name"].startswith("iPhone"):
+                      print(device["udid"]); sys.exit()
+          '
+          }
+          udid=$(pick)
+          if [ -z "$udid" ]; then
+            echo "No iPhone simulator on the image; downloading the iOS platform."
+            xcodebuild -downloadPlatform iOS
+            udid=$(pick)
+          fi
+          if [ -z "$udid" ]; then
+            xcrun simctl list runtimes
+            echo "::error::No iPhone simulator available"
+            exit 1
+          fi
+          xcrun simctl list devices | grep "$udid"
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
       - name: Build app and run unit/migration tests
         run: |
           xcodebuild test \
             -project Journey.xcodeproj \
             -scheme Journey \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -destination "platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}" \
             -only-testing:JourneyTests \
             CODE_SIGNING_ALLOWED=NO
