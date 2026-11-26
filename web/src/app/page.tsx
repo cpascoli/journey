@@ -97,7 +97,10 @@ export default function Home() {
 
         <section className={styles.section}>
           <div className={styles.sectionHead}>
-            <h2>Liner notes</h2>
+            <h2>
+              <span className={styles.lightOnly}>Liner notes</span>
+              <span className={styles.darkOnly}>Career highlights</span>
+            </h2>
             <span className={styles.facts}>2004 – today</span>
           </div>
           <div className={styles.notes}>
