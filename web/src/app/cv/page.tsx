@@ -5,6 +5,8 @@ import { EXPERIENCE, SITE, SKILLS } from "../_personal/content";
 import { personalFonts } from "../_personal/fonts";
 import styles from "../_personal/personal.module.css";
 import { PrintButton } from "../_personal/PrintButton";
+import { THEME_SCRIPT } from "../_personal/theme";
+import { ThemeToggle } from "../_personal/ThemeToggle";
 
 export const metadata: Metadata = {
   title: "Carlo Pascoli — CV",
@@ -15,11 +17,12 @@ export const metadata: Metadata = {
 export default function Cv() {
   return (
     <main className={`${styles.page} ${styles.cv} ${personalFonts}`} lang="en">
+      <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       <div className={styles.column}>
         <header className={styles.header}>
           <div className={`${styles.topline} ${styles.facts} ${styles.noPrint}`}>
             <Link href="/">← ashone.me</Link>
-            <span>CV</span>
+            <ThemeToggle />
           </div>
           <h1 className={styles.cvName}>Carlo Pascoli</h1>
           <p className={styles.about}>

@@ -28,7 +28,14 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   // the language the page actually renders in.
   const language = await currentLanguage();
   return (
-    <html className={`${sans.variable} ${mono.variable} ${serif.variable}`} lang={language}>
+    // The personal pages set their theme on <html> before React loads (see
+    // _personal/theme.ts), an attribute the server never rendered. The flag
+    // covers this element's own attributes only, not its children.
+    <html
+      className={`${sans.variable} ${mono.variable} ${serif.variable}`}
+      lang={language}
+      suppressHydrationWarning
+    >
       <body>{children}</body>
     </html>
   );

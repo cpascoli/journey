@@ -1,22 +1,35 @@
 /*
- * The personal pages (/ and /cv): a mixtape. Light card stock, black ink, one
- * cobalt accent. They are always light, whatever the journal's theme, so the
- * canvas behind them is repainted too — otherwise a dark-mode visitor would
- * see the journal's paper at the edges when the page bounces.
+ * The personal pages (/ and /cv) come in two themes, chosen with the corner
+ * button and remembered in the browser. Dark is the default: black and
+ * Bitcoin orange, with the projects picked from two blocks. Light is the
+ * mixtape: card stock, ink, cobalt, and a cassette you flip.
+ *
+ * The theme lives on <html> (set before paint by a script in the page), and
+ * the canvas behind the page is repainted to match — otherwise the journal's
+ * paper would show at the edges when the page bounces.
  */
 :global(html):has(.page),
 :global(html):has(.page) :global(body) {
+  background: #0e0e10;
+  color-scheme: dark;
+}
+
+:global(html[data-personal-theme="light"]):has(.page),
+:global(html[data-personal-theme="light"]):has(.page) :global(body) {
   background: #f4f4f0;
   color-scheme: light;
 }
 
 .page {
-  --ground: #f4f4f0;
-  --ink: #15151a;
-  --soft: #3c3c38;
-  --quiet: #55554f;
-  --line: #c9c9c2;
-  --blue: #2440e0;
+  --ground: #0e0e10;
+  --raised: #17171a;
+  --ink: #f2efe8;
+  --soft: #c9c4b8;
+  --quiet: #a8a294;
+  --line: #2f2c26;
+  --accent: #f7931a;
+  --accent-strong: #ffa940;
+  --on-accent: #0e0e10;
   /* One cassette unit: a pixel, shrunk on phones narrower than the tape. */
   --u: min(1px, calc((100vw - 3rem) / 342));
 
@@ -25,6 +38,37 @@
   color: var(--ink);
   font-family: var(--font-display), system-ui, sans-serif;
   line-height: 1.5;
+}
+
+:global(html[data-personal-theme="light"]) .page {
+  --ground: #f4f4f0;
+  --raised: #ffffff;
+  --ink: #15151a;
+  --soft: #3c3c38;
+  --quiet: #55554f;
+  --line: #c9c9c2;
+  --accent: #2440e0;
+  --accent-strong: #1a31b8;
+  --on-accent: #ffffff;
+}
+
+/* Pieces that belong to one theme only. */
+.lightOnly,
+.page .cassetteButton {
+  display: none;
+}
+
+:global(html[data-personal-theme="light"]) .lightOnly {
+  display: revert;
+}
+
+:global(html[data-personal-theme="light"]) .page .cassetteButton {
+  display: block;
+}
+
+:global(html[data-personal-theme="light"]) .darkOnly,
+:global(html[data-personal-theme="light"]) .page .blocks {
+  display: none;
 }
 
 .column {
@@ -42,7 +86,7 @@
 }
 
 .page :focus-visible {
-  outline: 2px solid var(--blue);
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 
@@ -69,6 +113,11 @@
 
 .topline a:hover {
   color: var(--ink);
+}
+
+.tools {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .iconButton {
@@ -107,7 +156,7 @@
 
 .lede em {
   font-style: normal;
-  color: var(--blue);
+  color: var(--accent);
 }
 
 .about {
@@ -116,18 +165,52 @@
   color: var(--soft);
 }
 
-/* The cassette is decoration, drawn in --u so it scales as one piece. */
+/*
+ * The cassette (light theme) is the switch between the two sides: tap it and
+ * it turns over. Drawn in --u so it scales as one piece.
+ */
+
+.cassetteButton {
+  width: calc(342 * var(--u));
+  height: calc(214 * var(--u));
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  perspective: 1000px;
+}
+
+.flipper {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+.flipped {
+  transform: rotateY(180deg);
+}
 
 .cassette {
+  position: absolute;
+  inset: 0;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: calc(10 * var(--u));
-  width: calc(342 * var(--u));
-  height: calc(214 * var(--u));
   padding: calc(14 * var(--u));
   border-radius: calc(14 * var(--u));
-  background: var(--ink);
+  background: #15151a;
+  backface-visibility: hidden;
+}
+
+.back {
+  transform: rotateY(180deg);
 }
 
 .label {
@@ -138,7 +221,8 @@
   height: calc(132 * var(--u));
   padding: calc(12 * var(--u)) calc(14 * var(--u));
   border-radius: calc(6 * var(--u));
-  background: var(--ground);
+  background: #f4f4f0;
+  color: #15151a;
 }
 
 .labelTitle {
@@ -146,18 +230,11 @@
   justify-content: space-between;
   align-items: baseline;
   padding-bottom: calc(6 * var(--u));
-  border-bottom: calc(2 * var(--u)) solid var(--blue);
+  border-bottom: calc(2 * var(--u)) solid var(--accent);
   font-size: calc(17 * var(--u));
   font-weight: 800;
   letter-spacing: 0.02em;
   line-height: 1.2;
-}
-
-.labelTitle span:last-child {
-  font-family: var(--font-facts), ui-monospace, monospace;
-  font-size: calc(11 * var(--u));
-  font-weight: 400;
-  letter-spacing: 0;
 }
 
 .window {
@@ -170,16 +247,22 @@
   height: calc(58 * var(--u));
   padding: 0 calc(22 * var(--u));
   border-radius: calc(29 * var(--u));
-  background: var(--ink);
+  background: #15151a;
 }
 
 .reel {
   box-sizing: border-box;
   width: calc(38 * var(--u));
   height: calc(38 * var(--u));
-  border: calc(9 * var(--u)) solid var(--ground);
+  border: calc(9 * var(--u)) dashed #f4f4f0;
   border-radius: 50%;
-  background: var(--ink);
+  background: #15151a;
+  transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+.cassetteButton:hover .reel,
+.flipped .reel {
+  transform: rotate(180deg);
 }
 
 .tape {
@@ -194,18 +277,93 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 calc(4 * var(--u));
+  padding: calc(6 * var(--u)) calc(4 * var(--u)) 0;
   font-family: var(--font-facts), ui-monospace, monospace;
   font-size: calc(11 * var(--u));
   line-height: 1.2;
   color: #c8c8c0;
 }
 
-.head {
-  width: calc(96 * var(--u));
-  height: calc(26 * var(--u));
-  border-radius: calc(4 * var(--u)) calc(4 * var(--u)) 0 0;
-  background: #2a2a30;
+/* The blocks (dark theme) do the same job: two blocks in a chain, pick one. */
+
+.blocks {
+  display: flex;
+  align-items: center;
+}
+
+.block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-height: 6.5rem;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--raised);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    transform 0.2s;
+}
+
+.block:hover {
+  border-color: var(--accent);
+}
+
+.block[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+  transform: translateY(-3px);
+}
+
+.blockLetter {
+  font-size: 1.75rem;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.blockName {
+  margin-top: auto;
+  font-size: 0.9375rem;
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+.blockCount {
+  font-family: var(--font-facts), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  opacity: 0.85;
+}
+
+.chain {
+  flex: none;
+  width: 1.25rem;
+  height: 2px;
+  background: var(--line);
+}
+
+.deck {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.side[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flipper,
+  .reel,
+  .block {
+    transition: none;
+  }
 }
 
 /* Contact */
@@ -237,16 +395,16 @@
 .primary {
   height: 3.375rem;
   border: 0;
-  background: var(--blue);
-  color: #fff;
+  background: var(--accent);
+  color: var(--on-accent);
   font-size: 1.0625rem;
   font-weight: 800;
 }
 
 .page a.primary:hover,
 .primary:hover {
-  background: #1a31b8;
-  color: #fff;
+  background: var(--accent-strong);
+  color: var(--on-accent);
 }
 
 .pill {
@@ -265,12 +423,6 @@
 }
 
 /* Sides: the tracklists */
-
-.sidesGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 2.5rem;
-}
 
 .section {
   display: flex;
@@ -309,7 +461,7 @@
 }
 
 .track a:hover h3 {
-  color: var(--blue);
+  color: var(--accent);
 }
 
 .trackNumber {
@@ -317,7 +469,7 @@
   width: 1.625rem;
   font-family: var(--font-facts), ui-monospace, monospace;
   font-size: 0.8125rem;
-  color: var(--blue);
+  color: var(--accent);
 }
 
 .trackText {
@@ -395,7 +547,7 @@
   gap: 1rem;
 }
 
-/* The QR code, full screen so a phone across a table can read it. */
+/* The QR code, on its own layer so a phone across a table can read it. */
 
 .qr {
   box-sizing: border-box;
@@ -403,15 +555,15 @@
   max-width: 26rem;
   max-height: 100dvh;
   padding: 1.75rem 1.5rem;
-  border: 0;
+  border: 1px solid var(--line);
   border-radius: 1.25rem;
-  background: var(--ground, #f4f4f0);
-  color: #15151a;
+  background: var(--ground);
+  color: var(--ink);
   font-family: var(--font-display), system-ui, sans-serif;
 }
 
 .qr::backdrop {
-  background: rgb(21 21 26 / 0.85);
+  background: rgb(0 0 0 / 0.8);
 }
 
 .qrBody {
@@ -428,40 +580,34 @@
   letter-spacing: -0.02em;
 }
 
+/* The code itself stays black on white in both themes: that is what scans. */
 .qrBody img {
   display: block;
   width: 100%;
   max-width: 20rem;
   height: auto;
-  border: 3px solid #15151a;
   border-radius: 1rem;
+  background: #fff;
 }
 
 .qrAddress {
   margin: 0;
   font-family: var(--font-facts), ui-monospace, monospace;
   font-size: 1.25rem;
-  color: #2440e0;
+  color: var(--accent);
 }
 
 .qrHint {
   margin: 0;
   font-size: 0.9375rem;
-  color: #3c3c38;
+  color: var(--soft);
 }
 
 .qrBody .pill {
   width: 100%;
   height: 3.375rem;
-  border-color: #15151a;
-  color: #15151a;
   font-size: 1.0625rem;
   font-weight: 800;
-}
-
-.qrBody .pill:hover {
-  background: #15151a;
-  color: #f4f4f0;
 }
 
 /* CV */
@@ -483,7 +629,7 @@
 }
 
 .job .facts {
-  color: var(--blue);
+  color: var(--accent);
 }
 
 .job h3 {
@@ -506,7 +652,7 @@
   color: var(--quiet);
 }
 
-/* Wider screens: the two sides sit next to each other, like an open J-card. */
+/* Wider screens: the switch sits beside its tracklist, like an open J-card. */
 
 @media (min-width: 60rem) {
   .home .column {
@@ -515,21 +661,9 @@
     gap: 3.5rem;
   }
 
-  .home .header {
-    display: grid;
-    grid-template-columns: 342px minmax(0, 1fr);
-    column-gap: 3.5rem;
-    row-gap: 1.25rem;
-    align-items: start;
-  }
-
-  .home .topline {
-    grid-column: 1 / -1;
-  }
-
-  .home .cassette {
-    grid-row: 2 / span 3;
-    align-self: center;
+  .home .lede,
+  .home .about {
+    max-width: 44rem;
   }
 
   .home .name {
@@ -553,9 +687,9 @@
     height: 3.375rem;
   }
 
-  .home .sidesGrid {
+  .home .deck {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 342px minmax(0, 1fr);
     gap: 3.5rem;
     align-items: start;
   }
@@ -591,8 +725,14 @@
     background: #fff;
   }
 
-  .page {
-    --blue: #15151a;
+  .page,
+  :global(html[data-personal-theme="light"]) .page {
+    --ground: #fff;
+    --ink: #15151a;
+    --soft: #3c3c38;
+    --quiet: #55554f;
+    --line: #c9c9c2;
+    --accent: #15151a;
     min-height: 0;
   }
 

@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { CONTACT, LINER_NOTES, SIDE_A, SIDE_B, SITE, type Project } from "./_personal/content";
+import { Deck } from "./_personal/Deck";
 import { personalFonts } from "./_personal/fonts";
 import styles from "./_personal/personal.module.css";
 import { QrButton } from "./_personal/QrButton";
+import { THEME_SCRIPT } from "./_personal/theme";
+import { ThemeToggle } from "./_personal/ThemeToggle";
 
 /**
  * The site's front door is Carlo's personal page; the journal lives behind
@@ -48,29 +51,14 @@ function Tracks({ projects }: { projects: Project[] }) {
 export default function Home() {
   return (
     <main className={`${styles.page} ${styles.home} ${personalFonts}`} lang="en">
+      <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       <div className={styles.column}>
         <header className={styles.header}>
           <div className={`${styles.topline} ${styles.facts}`}>
             <span>ashone.me · Bangkok</span>
-            <QrButton />
-          </div>
-
-          <div aria-hidden="true" className={styles.cassette}>
-            <div className={styles.label}>
-              <div className={styles.labelTitle}>
-                <span>CARLO PASCOLI</span>
-                <span>C-22</span>
-              </div>
-              <div className={styles.window}>
-                <span className={styles.reel} />
-                <span className={styles.tape} />
-                <span className={styles.reel} />
-              </div>
-            </div>
-            <div className={styles.sides}>
-              <span>A · Bitcoin</span>
-              <span className={styles.head} />
-              <span>B · the rest</span>
+            <div className={styles.tools}>
+              <ThemeToggle />
+              <QrButton />
             </div>
           </div>
 
@@ -105,23 +93,7 @@ export default function Home() {
           </div>
         </nav>
 
-        <div className={styles.sidesGrid}>
-          <section className={styles.section}>
-            <div className={styles.sectionHead}>
-              <h2>Side A</h2>
-              <span className={styles.facts}>Bitcoin and investing</span>
-            </div>
-            <Tracks projects={SIDE_A} />
-          </section>
-
-          <section className={styles.section}>
-            <div className={styles.sectionHead}>
-              <h2>Side B</h2>
-              <span className={styles.facts}>Built for myself, with agents</span>
-            </div>
-            <Tracks projects={SIDE_B} />
-          </section>
-        </div>
+        <Deck sideA={<Tracks projects={SIDE_A} />} sideB={<Tracks projects={SIDE_B} />} />
 
         <section className={styles.section}>
           <div className={styles.sectionHead}>
