@@ -69,7 +69,7 @@ export default function Home() {
           </p>
           <p className={styles.about}>
             A hands-on builder who understands financial products and turns ambiguous ideas at the
-            intersection of AI, markets and distributed systems into working products.
+            intersection of blockchain, AI, markets and distributed systems into working products.
           </p>
         </header>
 
