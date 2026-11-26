@@ -1,0 +1,11 @@
+BEGIN:VCARD
+VERSION:3.0
+N:Pascoli;Carlo;;;
+FN:Carlo Pascoli
+EMAIL;TYPE=INTERNET:carlo.pascoli@gmail.com
+URL:https://ashone.me
+X-SOCIALPROFILE;TYPE=telegram:https://t.me/mad4sats
+X-SOCIALPROFILE;TYPE=linkedin:https://www.linkedin.com/in/carlopascoli
+X-SOCIALPROFILE;TYPE=github:https://github.com/cpascoli
+NOTE:Engineering leader who loves to ship. Telegram: @mad4sats
+END:VCARD

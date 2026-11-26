@@ -1,24 +1,153 @@
-import { currentLanguage } from "@/lib/i18n/current";
-import { stringsFor } from "@/lib/i18n/strings";
+import type { Metadata } from "next";
+import Link from "next/link";
 
-import { LanguageToggle } from "./LanguageToggle";
-import { SiteFooter } from "./SiteFooter";
+import { CONTACT, LINER_NOTES, SIDE_A, SIDE_B, SITE, type Project } from "./_personal/content";
+import { personalFonts } from "./_personal/fonts";
+import styles from "./_personal/personal.module.css";
+import { QrButton } from "./_personal/QrButton";
 
-export const dynamic = "force-dynamic";
+/**
+ * The site's front door is Carlo's personal page; the journal lives behind
+ * its invitation links (/i/…, /read) and does not depend on this page.
+ */
+export const metadata: Metadata = {
+  title: "Carlo Pascoli",
+  description:
+    "Engineering leader who loves to ship. Projects, contacts and CV of Carlo Pascoli.",
+  metadataBase: new URL(SITE),
+  openGraph: { title: "Carlo Pascoli", description: "Engineering leader who loves to ship.", url: SITE },
+};
 
-export default async function Home() {
-  const language = await currentLanguage();
-  const strings = stringsFor(language);
+function Tracks({ projects }: { projects: Project[] }) {
   return (
-    <main className="page">
-      <div className="page-top">
-        <p className="eyebrow">{strings.homeEyebrow}</p>
-        <LanguageToggle language={language} next="/" />
+    <ul className={styles.tracks}>
+      {projects.map((project) => (
+        <li className={styles.track} key={project.track}>
+          <a href={project.href} rel="noopener">
+            <span className={styles.trackNumber}>{project.track}</span>
+            <div className={styles.trackText}>
+              <h3>{project.name}</h3>
+              <p>{project.line}</p>
+            </div>
+            {/* Small fixed thumbnails, already sized on disk. */}
+            <img
+              alt={project.alt}
+              className={`${styles.thumb} ${project.shape === "wide" ? styles.wide : styles.square}`}
+              height={56}
+              loading="lazy"
+              src={project.image}
+              width={project.shape === "wide" ? 84 : 56}
+            />
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export default function Home() {
+  return (
+    <main className={`${styles.page} ${styles.home} ${personalFonts}`} lang="en">
+      <div className={styles.column}>
+        <header className={styles.header}>
+          <div className={`${styles.topline} ${styles.facts}`}>
+            <span>ashone.me · Bangkok</span>
+            <QrButton />
+          </div>
+
+          <div aria-hidden="true" className={styles.cassette}>
+            <div className={styles.label}>
+              <div className={styles.labelTitle}>
+                <span>CARLO PASCOLI</span>
+                <span>C-22</span>
+              </div>
+              <div className={styles.window}>
+                <span className={styles.reel} />
+                <span className={styles.tape} />
+                <span className={styles.reel} />
+              </div>
+            </div>
+            <div className={styles.sides}>
+              <span>A · Bitcoin</span>
+              <span className={styles.head} />
+              <span>B · the rest</span>
+            </div>
+          </div>
+
+          <h1 className={styles.name}>Carlo Pascoli</h1>
+          <p className={styles.lede}>
+            Engineering leader who loves to ship. Twenty-two years of it, from Shazam&rsquo;s
+            recommendation engine to <em>Bitcoin</em>.
+          </p>
+          <p className={styles.about}>
+            A hands-on builder who understands financial products and turns ambiguous ideas at the
+            intersection of AI, markets and distributed systems into working products.
+          </p>
+        </header>
+
+        <nav aria-label="Contact" className={styles.contact}>
+          <a className={styles.primary} download href={CONTACT.vcard}>
+            Save my contact
+          </a>
+          <div className={styles.contactGrid}>
+            <a className={styles.pill} href={CONTACT.telegram} rel="noopener">
+              Telegram
+            </a>
+            <a className={styles.pill} href={CONTACT.linkedin} rel="noopener">
+              LinkedIn
+            </a>
+            <a className={styles.pill} href={CONTACT.github} rel="noopener">
+              GitHub
+            </a>
+            <a className={styles.pill} href={CONTACT.email}>
+              Email
+            </a>
+          </div>
+        </nav>
+
+        <div className={styles.sidesGrid}>
+          <section className={styles.section}>
+            <div className={styles.sectionHead}>
+              <h2>Side A</h2>
+              <span className={styles.facts}>Bitcoin and investing</span>
+            </div>
+            <Tracks projects={SIDE_A} />
+          </section>
+
+          <section className={styles.section}>
+            <div className={styles.sectionHead}>
+              <h2>Side B</h2>
+              <span className={styles.facts}>Built for myself, with agents</span>
+            </div>
+            <Tracks projects={SIDE_B} />
+          </section>
+        </div>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHead}>
+            <h2>Liner notes</h2>
+            <span className={styles.facts}>2004 – today</span>
+          </div>
+          <div className={styles.notes}>
+            {LINER_NOTES.map((note) => (
+              <p key={note.where}>
+                <strong>{note.where}</strong> {note.what}
+              </p>
+            ))}
+            <p className={styles.facts}>
+              Also: Capital One, IG Group, AlphaSights, Cognitochain, HashStrat.
+            </p>
+            <Link className={styles.pill} href="/cv">
+              Read the full CV
+            </Link>
+          </div>
+        </section>
+
+        <footer className={`${styles.footer} ${styles.facts}`}>
+          <span>ashone.me</span>
+          <span>Carlo Pascoli</span>
+        </footer>
       </div>
-      <h1>{strings.siteName}</h1>
-      <p className="lede">{strings.homeLede}</p>
-      <p className="note">{strings.homeNote}</p>
-      <SiteFooter language={language} />
     </main>
   );
 }

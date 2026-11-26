@@ -25,9 +25,6 @@ export type Strings = {
   invitationWithdrawnLede: string;
   entryUnavailable: string;
   entryUnavailableLede: string;
-  homeEyebrow: string;
-  homeLede: string;
-  homeNote: string;
   openMedia: string;
   closeMedia: string;
   photoAlt: (index: number) => string;
@@ -87,10 +84,6 @@ const en: Strings = {
     "It no longer opens the journal. If you think that's a mistake, ask whoever shared it with you for a new link.",
   entryUnavailable: "Entry unavailable",
   entryUnavailableLede: "This entry is not available with the current invitation.",
-  homeEyebrow: "A travel journal",
-  homeLede:
-    "Places, photos and the stories around them — written on the road, and shared only with the people invited to read along.",
-  homeNote: "If you were sent an invitation link, open it to start reading.",
   openMedia: "Open full screen",
   closeMedia: "Close",
   photoAlt: (index) => `Journey photo ${index}`,
@@ -151,10 +144,6 @@ const it: Strings = {
     "Non dà più accesso al diario. Se pensi che sia un errore, chiedi un nuovo link a chi te l'ha condiviso.",
   entryUnavailable: "Voce non disponibile",
   entryUnavailableLede: "Questa voce non è disponibile con l'invito attuale.",
-  homeEyebrow: "Diario di viaggio",
-  homeLede:
-    "Luoghi, foto e le storie che li accompagnano — scritti in viaggio, e condivisi solo con chi è invitato a leggerli.",
-  homeNote: "Se hai ricevuto un link d'invito, aprilo per iniziare a leggere.",
   openMedia: "Apri a schermo intero",
   closeMedia: "Chiudi",
   photoAlt: (index) => `Foto ${index} del diario`,
