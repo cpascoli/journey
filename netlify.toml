@@ -5,8 +5,11 @@
   command = "pnpm install --frozen-lockfile && pnpm build"
   publish = ".next"
   # Runs from the base directory. Skips deploys for commits that only touch
-  # the iOS app or the repo docs.
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../netlify.toml"
+  # the iOS app or the repo docs. With no build cache Netlify sets
+  # CACHED_COMMIT_REF to the commit being built, so the diff is empty and a
+  # real website change was cancelled as "no content change"; equal refs
+  # therefore mean "build".
+  ignore = "[ \"$CACHED_COMMIT_REF\" != \"$COMMIT_REF\" ] && git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../netlify.toml"
 
 [build.environment]
   NODE_VERSION = "22"
