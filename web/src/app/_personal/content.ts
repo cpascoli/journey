@@ -27,6 +27,15 @@ export type Project = {
 export const SIDE_A: Project[] = [
   {
     track: "A1",
+    name: "Power Fund",
+    line: "A research desk for the machine age, staffed by agents.",
+    href: "https://powerfund.finance",
+    image: "/personal/powerfund.jpg",
+    alt: "Power Fund home page",
+    shape: "wide",
+  },
+  {
+    track: "A2",
     name: "CoinStrat",
     line: "Tells you when to stack sats, and how hard.",
     href: "https://coinstrat.xyz",
@@ -35,21 +44,12 @@ export const SIDE_A: Project[] = [
     shape: "wide",
   },
   {
-    track: "A2",
+    track: "A3",
     name: "Power Wallet",
     line: "Bitcoin accumulation on autopilot, keys in your hands.",
     href: "https://powerwallet.finance",
     image: "/personal/powerwallet.jpg",
     alt: "Power Wallet home page",
-    shape: "wide",
-  },
-  {
-    track: "A3",
-    name: "Power Fund",
-    line: "A research desk for the machine age, staffed by agents.",
-    href: "https://powerfund.finance",
-    image: "/personal/powerfund.jpg",
-    alt: "Power Fund home page",
     shape: "wide",
   },
   {
@@ -114,7 +114,7 @@ export const SIDE_B: Project[] = [
 export const LINER_NOTES: { where: string; what: string }[] = [
   {
     where: "TruFin Labs.",
-    what: "Head of Engineering. Liquid staking contracts securing more than $300M.",
+    what: "Joined as a senior smart contract engineer, promoted to Head of Engineering. Liquid staking contracts securing more than $300M.",
   },
   {
     where: "Thomson Reuters.",
@@ -131,7 +131,7 @@ export const EXPERIENCE: Job[] = [
     years: "2023 – present",
     title: "Head of Engineering, TruFin Labs",
     summary:
-      "Lead the smart contract team behind TruFin's liquid staking protocol for institutional clients. Delivered staking on Aptos, NEAR, Injective and Solana, securing more than $300M in assets.",
+      "Joined as Senior Smart Contract Engineer in 2023 and was promoted to Head of Engineering in 2025. Lead the team behind TruFin's liquid staking protocol for institutional clients. Delivered staking on Aptos, NEAR, Injective and Solana, securing more than $300M in assets.",
     stack: "Solidity · Rust · Move · Foundry",
   },
   {
@@ -196,10 +196,10 @@ export const SKILLS: { area: string; detail: string }[] = [
     area: "Leadership.",
     detail: "Hiring, people management, architecture, agile and continuous delivery.",
   },
-  { area: "Blockchain.", detail: "Solidity, Move, Rust, EVM, DeFi protocol design." },
+  { area: "Blockchain.", detail: "Solidity, Rust, Move, EVM, DeFi protocol design." },
   {
-    area: "Backend and web.",
-    detail: "Kotlin, Java, TypeScript, React, Postgres, AWS, distributed systems.",
+    area: "Distributed systems.",
+    detail: "TypeScript, Kotlin, Java, React, Micro Services, Event Sourcing, AWS.",
   },
   { area: "Mobile.", detail: "Swift and Objective-C on iOS since the first iPhone SDK." },
 ];
