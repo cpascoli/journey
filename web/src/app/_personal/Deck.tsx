@@ -8,7 +8,7 @@ type Side = "A" | "B";
 
 const SIDES: { side: Side; name: string; count: string }[] = [
   { side: "A", name: "Bitcoin and investing", count: "4 projects" },
-  { side: "B", name: "Built for myself, with agents", count: "5 projects" },
+  { side: "B", name: "Various apps and projects", count: "5 projects" },
 ];
 
 function CassetteFace({ side, name, back }: { side: Side; name: string; back?: boolean }) {
@@ -54,7 +54,7 @@ export function Deck({ sideA, sideB }: { sideA: ReactNode; sideB: ReactNode }) {
         >
           <span aria-hidden="true" className={`${styles.flipper} ${side === "B" ? styles.flipped : ""}`}>
             <CassetteFace name="Bitcoin and investing" side="A" />
-            <CassetteFace back name="Built for myself" side="B" />
+            <CassetteFace back name="Various apps and projects" side="B" />
           </span>
         </button>
 
