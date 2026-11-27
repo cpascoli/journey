@@ -16,9 +16,9 @@ import { ThemeToggle } from "./_personal/ThemeToggle";
 export const metadata: Metadata = {
   title: "Carlo Pascoli",
   description:
-    "Engineering leader who loves to ship. Projects, contacts and CV of Carlo Pascoli.",
+    "Engineering leader who loves to innovate. Projects, contacts and CV of Carlo Pascoli.",
   metadataBase: new URL(SITE),
-  openGraph: { title: "Carlo Pascoli", description: "Engineering leader who loves to ship.", url: SITE },
+  openGraph: { title: "Carlo Pascoli", description: "Engineering leader who loves to innovate.", url: SITE },
 };
 
 function Tracks({ projects }: { projects: Project[] }) {
