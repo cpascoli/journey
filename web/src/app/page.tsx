@@ -64,12 +64,13 @@ export default function Home() {
 
           <h1 className={styles.name}>Carlo Pascoli</h1>
           <p className={styles.lede}>
-            Engineering leader who loves to ship. Twenty-two years of it, from Shazam&rsquo;s
-            recommendation engine to <em>Bitcoin</em>.
+            Engineering leader who loves to innovate. From Shazam&rsquo;s recommendation engine to{" "}
+            <em>Bitcoin</em>.
           </p>
           <p className={styles.about}>
             A hands-on builder who understands financial products and turns ambiguous ideas at the
-            intersection of blockchain, AI, markets and distributed systems into working products.
+            intersection of AI, digital assets, markets and distributed systems into working
+            solutions.
           </p>
         </header>
 
